@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Market Screener</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e4e4e4;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.95rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px 25px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 12px 20px 12px 45px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+            width: 280px;
+            transition: all 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(255,255,255,0.12);
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 10px 16px;
+            border-radius: 8px;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+            color: #00d4ff;
+        }
+
+        .table-container {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            overflow-x: auto;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1100px;
+        }
+
+        th {
+            background: rgba(0,0,0,0.3);
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #aaa;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.3s;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        th:hover {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+        }
+
+        th.sorted-asc::after {
+            content: " ▲";
+            color: #00d4ff;
+        }
+
+        th.sorted-desc::after {
+            content: " ▼";
+            color: #00d4ff;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        tr {
+            transition: background 0.2s;
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .symbol {
+            font-weight: 700;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .price {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            color: #e4e4e4;
+        }
+
+        .volume, .fdv {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .change, .bounce {
+            font-weight: 600;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            padding: 5px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .change.positive, .bounce.positive {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+        }
+
+        .change.negative {
+            background: rgba(255, 71, 87, 0.15);
+            color: #ff4757;
+        }
+
+        .change.neutral, .bounce.neutral {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+        }
+
+        .bounce.high {
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+        }
+
+        .low-info {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .low-date {
+            font-size: 0.7rem;
+            color: #555;
+            display: block;
+        }
+
+        .rank {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .volume-bar {
+            width: 100%;
+            height: 3px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .volume-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            border-radius: 2px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+        }
+
+        .timestamp {
+            text-align: center;
+            color: #555;
+            margin-top: 20px;
+            font-size: 0.85rem;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.green { background: #00ff88; }
+        .legend-dot.red { background: #ff4757; }
+        .legend-dot.gold { background: #ffd700; }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .search-box input { width: 100%; }
+            .controls { flex-direction: column; }
+            th, td { padding: 8px 10px; font-size: 0.8rem; }
+            .stats-bar { gap: 10px; }
+            .stat-item { padding: 10px 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Crypto Market Screener</h1>
+            <p class="subtitle">Binance Futures USDT-M Perpetuals | FDV > $100M | Q4 2025 Bounce Analysis</p>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="total-count">190</div>
+                <div class="stat-label">Total Pairs</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="gainers-count" style="color: #00ff88;">0</div>
+                <div class="stat-label">30D Gainers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="losers-count" style="color: #ff4757;">0</div>
+                <div class="stat-label">30D Losers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avg-bounce" style="color: #ffd700;">0%</div>
+                <div class="stat-label">Avg Bounce</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="total-volume">$0B</div>
+                <div class="stat-label">Total 24h Vol</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="search" placeholder="Search symbol...">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="gainers">30D Gainers</button>
+                <button class="filter-btn" data-filter="losers">30D Losers</button>
+                <button class="filter-btn" data-filter="bigBounce">Bounce >100%</button>
+                <button class="filter-btn" data-filter="recentLow">Recent Low</button>
+                <button class="filter-btn" data-filter="top20">Top 20 Vol</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="crypto-table">
+                <thead>
+                    <tr>
+                        <th data-sort="rank">#</th>
+                        <th data-sort="symbol">Symbol</th>
+                        <th data-sort="price">Price</th>
+                        <th data-sort="volume">24h Vol</th>
+                        <th data-sort="fdv">FDV</th>
+                        <th data-sort="change">30D Chg</th>
+                        <th data-sort="q4Low">Q4 Low</th>
+                        <th data-sort="bounce" class="sorted-desc">Bounce %</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+            <div class="no-results" id="no-results" style="display: none;">
+                No cryptocurrencies match your search criteria
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot green"></div>
+                <span>Positive Change</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot red"></div>
+                <span>Negative Change</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot gold"></div>
+                <span>High Bounce (>200%)</span>
+            </div>
+        </div>
+
+        <p class="timestamp" id="timestamp">Data fetched: Loading...</p>
+    </div>
+
+    <script>
+        // Real data with Nov-Dec 2025 lows and bounce percentages
+        const cryptoData = [
+    { symbol: "PIPPIN", price: 0.49073, volume: 339.8, fdv: 499, change: 184.76, q4Low: 0.01956, lowDate: "2025-11-21", bounce: 2408.84 },
+    { symbol: "RIVER", price: 12.589, volume: 827.7, fdv: 1270, change: 171.94, q4Low: 1.616, lowDate: "2025-12-17", bounce: 679.02 },
+    { symbol: "CC", price: 0.15247, volume: 28.9, fdv: 5634, change: 122.71, q4Low: 0.0585, lowDate: "2025-12-06", bounce: 160.63 },
+    { symbol: "H", price: 0.17317, volume: 29.7, fdv: 1725, change: 120.45, q4Low: 0.04598, lowDate: "2025-12-08", bounce: 276.62 },
+    { symbol: "MYX", price: 5.886, volume: 518.0, fdv: 5844, change: 83.61, q4Low: 1.633, lowDate: "2025-11-03", bounce: 260.44 },
+    { symbol: "ICNT", price: 0.503, volume: 12.5, fdv: 359, change: 82.49, q4Low: 0.1734, lowDate: "2025-11-20", bounce: 190.08 },
+    { symbol: "VVV", price: 1.973, volume: 3.8, fdv: 152, change: 78.74, q4Low: 0.913, lowDate: "2025-11-21", bounce: 116.10 },
+    { symbol: "PIEVERSE", price: 0.7594, volume: 147.8, fdv: 752, change: 56.23, q4Low: 0.111, lowDate: "2025-11-14", bounce: 584.14 },
+    { symbol: "CHZ", price: 0.04501, volume: 26.3, fdv: 459, change: 49.32, q4Low: 0.0265, lowDate: "2025-11-21", bounce: 69.85 },
+    { symbol: "SYRUP", price: 0.36016, volume: 7.7, fdv: 438, change: 35.16, q4Low: 0.23633, lowDate: "2025-12-03", bounce: 52.40 },
+    { symbol: "ZEC", price: 503.63, volume: 582.7, fdv: 8337, change: 33.45, q4Low: 300.78, lowDate: "2025-12-03", bounce: 67.44 },
+    { symbol: "M", price: 1.5662, volume: 4.9, fdv: 8338, change: 22.59, q4Low: 1.168, lowDate: "2025-11-27", bounce: 34.09 },
+    { symbol: "COW", price: 0.2345, volume: 1.0, fdv: 234, change: 21.99, q4Low: 0.1596, lowDate: "2025-11-22", bounce: 46.93 },
+    { symbol: "TON", price: 1.8722, volume: 44.3, fdv: 9581, change: 17.98, q4Low: 1.4176, lowDate: "2025-12-18", bounce: 32.07 },
+    { symbol: "ORDI", price: 4.778, volume: 12.7, fdv: 100, change: 16.34, q4Low: 3.393, lowDate: "2025-11-21", bounce: 40.82 },
+    { symbol: "CVX", price: 2.106, volume: 307.7, fdv: 210, change: 15.79, q4Low: 1.536, lowDate: "2025-11-21", bounce: 37.11 },
+    { symbol: "SKY", price: 0.06235, volume: 3.6, fdv: 1475, change: 13.90, q4Low: 0.04026, lowDate: "2025-11-22", bounce: 54.87 },
+    { symbol: "BLIFE", price: 0.13355, volume: 22.6, fdv: 132, change: 13.51, q4Low: 0.08017, lowDate: "2025-11-21", bounce: 66.58 },
+    { symbol: "MELANIA", price: 0.133, volume: 39.3, fdv: 132, change: 13.43, q4Low: 0.0898, lowDate: "2025-11-04", bounce: 48.11 },
+    { symbol: "XTZ", price: 0.556, volume: 6.6, fdv: 609, change: 13.41, q4Low: 0.42, lowDate: "2025-12-18", bounce: 32.38 },
+    { symbol: "WLFI", price: 0.1722, volume: 267.2, fdv: 17199, change: 13.06, q4Low: 0.1054, lowDate: "2025-11-04", bounce: 63.38 },
+    { symbol: "PENGU", price: 0.012778, volume: 207.0, fdv: 1022, change: 12.87, q4Low: 0.008438, lowDate: "2025-12-19", bounce: 51.43 },
+    { symbol: "BCH", price: 645.1, volume: 412.0, fdv: 12901, change: 12.37, q4Low: 446.45, lowDate: "2025-11-21", bounce: 44.50 },
+    { symbol: "STX", price: 0.3292, volume: 27.4, fdv: 600, change: 9.56, q4Low: 0.236, lowDate: "2025-12-18", bounce: 39.49 },
+    { symbol: "FORM", price: 0.3793, volume: 4.8, fdv: 216, change: 9.13, q4Low: 0.2678, lowDate: "2025-12-14", bounce: 41.64 },
+    { symbol: "XMR", price: 436.65, volume: 21.3, fdv: 8040, change: 8.55, q4Low: 319.08, lowDate: "2025-11-21", bounce: 36.85 },
+    { symbol: "JTO", price: 0.486, volume: 9.2, fdv: 485, change: 8.43, q4Low: 0.3063, lowDate: "2025-12-18", bounce: 58.67 },
+    { symbol: "RENDER", price: 1.787, volume: 119.7, fdv: 949, change: 7.97, q4Low: 1.177, lowDate: "2025-12-19", bounce: 51.83 },
+    { symbol: "CFX", price: 0.07985, volume: 6.6, fdv: 453, change: 7.50, q4Low: 0.0639, lowDate: "2025-12-18", bounce: 24.96 },
+    { symbol: "GLM", price: 0.2403, volume: 3.6, fdv: 240, change: 7.24, q4Low: 0.15953, lowDate: "2025-11-03", bounce: 50.63 },
+    { symbol: "DOGE", price: 0.1539, volume: 1068.4, fdv: 391, change: 6.17, q4Low: 0.11534, lowDate: "2025-12-31", bounce: 33.43 },
+    { symbol: "MON", price: 0.02827, volume: 60.5, fdv: 2833, change: 5.81, q4Low: 0.01648, lowDate: "2025-12-18", bounce: 71.54 },
+    { symbol: "XPL", price: 0.1913, volume: 97.1, fdv: 1913, change: 5.33, q4Low: 0.115, lowDate: "2025-12-19", bounce: 66.35 },
+    { symbol: "FET", price: 0.2572, volume: 66.3, fdv: 694, change: 5.22, q4Low: 0.1917, lowDate: "2025-12-18", bounce: 34.17 },
+    { symbol: "SUI", price: 1.7051, volume: 285.3, fdv: 17005, change: 5.01, q4Low: 1.3038, lowDate: "2025-12-01", bounce: 30.78 },
+    { symbol: "CKB", price: 0.002762, volume: 2.0, fdv: 134, change: 4.97, q4Low: 0.002138, lowDate: "2025-12-18", bounce: 29.19 },
+    { symbol: "SFP", price: 0.3439, volume: 0.8, fdv: 172, change: 4.22, q4Low: 0.2878, lowDate: "2025-12-18", bounce: 19.49 },
+    { symbol: "CRV", price: 0.426, volume: 58.3, fdv: 993, change: 3.73, q4Low: 0.331, lowDate: "2025-12-18", bounce: 28.70 },
+    { symbol: "AVNT", price: 0.3486, volume: 25.7, fdv: 348, change: 3.70, q4Low: 0.2229, lowDate: "2025-12-18", bounce: 56.39 },
+    { symbol: "TRX", price: 0.29391, volume: 45.4, fdv: 27828, change: 2.89, q4Low: 0.27034, lowDate: "2025-12-14", bounce: 8.72 },
+    { symbol: "PAXG", price: 4348.45, volume: 40.7, fdv: 1621, change: 2.67, q4Low: 3914.48, lowDate: "2025-11-04", bounce: 11.09 },
+    { symbol: "LDO", price: 0.6332, volume: 20.9, fdv: 632, change: 2.62, q4Low: 0.4907, lowDate: "2025-12-18", bounce: 29.04 },
+    { symbol: "GRASS", price: 0.3172, volume: 2.1, fdv: 314, change: 2.50, q4Low: 0.2583, lowDate: "2025-11-16", bounce: 22.80 },
+    { symbol: "APT", price: 1.9241, volume: 29.7, fdv: 2285, change: 2.49, q4Low: 1.413, lowDate: "2025-12-18", bounce: 36.17 },
+    { symbol: "ATOM", price: 2.327, volume: 19.6, fdv: 1131, change: 2.30, q4Low: 1.828, lowDate: "2025-12-18", bounce: 27.30 },
+    { symbol: "XRP", price: 2.1165, volume: 839.7, fdv: 209533, change: 2.25, q4Low: 1.7703, lowDate: "2025-12-19", bounce: 19.56 },
+    { symbol: "UNI", price: 5.937, volume: 87.3, fdv: 5306, change: 2.24, q4Low: 4.732, lowDate: "2025-11-04", bounce: 25.46 },
+    { symbol: "ZEN", price: 9.288, volume: 23.6, fdv: 194, change: 1.70, q4Low: 7.111, lowDate: "2025-12-18", bounce: 30.61 },
+    { symbol: "FARTCOIN", price: 0.3637, volume: 143.0, fdv: 362, change: 1.39, q4Low: 0.179, lowDate: "2025-11-22", bounce: 103.18 },
+    { symbol: "OM", price: 0.07766, volume: 12.3, fdv: 134, change: 1.33, q4Low: 0.06378, lowDate: "2025-12-15", bounce: 21.76 },
+    { symbol: "RVN", price: 0.00787, volume: 1.2, fdv: 125, change: 1.33, q4Low: 0.00651, lowDate: "2025-12-18", bounce: 20.89 },
+    { symbol: "ZRX", price: 0.1483, volume: 28.8, fdv: 149, change: 1.23, q4Low: 0.1136, lowDate: "2025-12-24", bounce: 30.55 },
+    { symbol: "BARD", price: 0.8232, volume: 8.6, fdv: 824, change: 1.21, q4Low: 0.6533, lowDate: "2025-11-03", bounce: 26.01 },
+    { symbol: "2Z", price: 0.12755, volume: 3.8, fdv: 1272, change: 1.16, q4Low: 0.09971, lowDate: "2025-12-18", bounce: 27.92 },
+    { symbol: "AVAX", price: 14.133, volume: 168.7, fdv: 6496, change: 1.13, q4Low: 11.261, lowDate: "2025-12-19", bounce: 25.50 },
+    { symbol: "LTC", price: 82.97, volume: 82.2, fdv: 6334, change: 0.89, q4Low: 72.6, lowDate: "2025-12-18", bounce: 14.28 },
+    { symbol: "SAFE", price: 0.1536, volume: 0.5, fdv: 153, change: 0.59, q4Low: 0.1187, lowDate: "2025-12-18", bounce: 29.40 },
+    { symbol: "ETH", price: 3143.45, volume: 5291.8, fdv: 378573, change: 0.40, q4Low: 2620.0, lowDate: "2025-11-21", bounce: 19.98 },
+    { symbol: "ARB", price: 0.2141, volume: 37.0, fdv: 2130, change: 0.29, q4Low: 0.1718, lowDate: "2025-12-18", bounce: 24.62 },
+    { symbol: "EDU", price: 0.1611, volume: 1.3, fdv: 160, change: 0.20, q4Low: 0.1237, lowDate: "2025-12-16", bounce: 30.23 },
+    { symbol: "OP", price: 0.3196, volume: 32.7, fdv: 1367, change: 0.18, q4Low: 0.2504, lowDate: "2025-12-25", bounce: 27.64 },
+    { symbol: "ZRO", price: 1.3912, volume: 7.6, fdv: 1387, change: 0.12, q4Low: 1.0667, lowDate: "2025-11-21", bounce: 30.42 },
+    { symbol: "RAVE", price: 0.42051, volume: 31.2, fdv: 421, change: 0.00, q4Low: 0.2538, lowDate: "2025-12-16", bounce: 65.69 },
+    { symbol: "NIGHT", price: 0.09054, volume: 38.4, fdv: 2166, change: 0.00, q4Low: 0.03995, lowDate: "2025-12-11", bounce: 126.63 },
+    { symbol: "LIT", price: 2.577, volume: 102.3, fdv: 2537, change: 0.00, q4Low: 2.24, lowDate: "2025-12-30", bounce: 15.04 },
+    { symbol: "STABLE", price: 0.016381, volume: 22.5, fdv: 1635, change: 0.00, q4Low: 0.0091, lowDate: "2025-12-23", bounce: 80.01 },
+    { symbol: "ALGO", price: 0.1361, volume: 14.3, fdv: 1195, change: -0.02, q4Low: 0.105, lowDate: "2025-12-18", bounce: 29.62 },
+    { symbol: "BTC", price: 91288.9, volume: 6736.5, fdv: 1821383, change: -0.10, q4Low: 80600.0, lowDate: "2025-11-21", bounce: 13.26 },
+    { symbol: "BRETT", price: 0.01836, volume: 6.9, fdv: 181, change: -0.59, q4Low: 0.01288, lowDate: "2025-11-22", bounce: 42.55 },
+    { symbol: "NEAR", price: 1.739, volume: 66.6, fdv: 2221, change: -0.68, q4Low: 1.404, lowDate: "2025-12-19", bounce: 23.86 },
+    { symbol: "BNB", price: 887.84, volume: 261.9, fdv: 122005, change: -0.82, q4Low: 790.92, lowDate: "2025-11-21", bounce: 12.25 },
+    { symbol: "PROVE", price: 0.4414, volume: 1.9, fdv: 442, change: -1.09, q4Low: 0.3395, lowDate: "2025-12-18", bounce: 30.01 },
+    { symbol: "KITE", price: 0.09461, volume: 5.0, fdv: 944, change: -1.26, q4Low: 0.06009, lowDate: "2025-11-04", bounce: 57.45 },
+    { symbol: "VIRTUAL", price: 0.8834, volume: 87.1, fdv: 879, change: -1.29, q4Low: 0.6285, lowDate: "2025-12-19", bounce: 40.56 },
+    { symbol: "JASMY", price: 0.006788, volume: 7.4, fdv: 337, change: -1.50, q4Low: 0.005572, lowDate: "2025-12-31", bounce: 21.82 },
+    { symbol: "YFI", price: 3733.0, volume: 4.9, fdv: 137, change: -1.65, q4Low: 3055.0, lowDate: "2025-12-18", bounce: 22.19 },
+    { symbol: "POL", price: 0.12091, volume: 14.1, fdv: 1279, change: -1.68, q4Low: 0.09913, lowDate: "2025-12-31", bounce: 21.97 },
+    { symbol: "FIL", price: 1.513, volume: 150.7, fdv: 2950, change: -1.76, q4Low: 1.159, lowDate: "2025-12-18", bounce: 30.54 },
+    { symbol: "ETHFI", price: 0.7883, volume: 12.9, fdv: 782, change: -1.84, q4Low: 0.6565, lowDate: "2025-12-26", bounce: 20.08 },
+    { symbol: "IOTA", price: 0.1007, volume: 8.2, fdv: 479, change: -1.91, q4Low: 0.0805, lowDate: "2025-12-31", bounce: 25.09 },
+    { symbol: "DGB", price: 0.01922, volume: 45.7, fdv: 113, change: -2.01, q4Low: 0.01922, lowDate: "2025-11-01", bounce: 0.00 },
+    { symbol: "KMNO", price: 0.06031, volume: 2.4, fdv: 602, change: -2.04, q4Low: 0.04559, lowDate: "2025-11-21", bounce: 32.29 },
+    { symbol: "WIF", price: 0.3756, volume: 190.6, fdv: 374, change: -2.04, q4Low: 0.2608, lowDate: "2025-12-31", bounce: 44.02 },
+    { symbol: "ZIL", price: 0.0052, volume: 2.4, fdv: 105, change: -2.07, q4Low: 0.00427, lowDate: "2025-12-18", bounce: 21.78 },
+    { symbol: "SOL", price: 134.73, volume: 1587.6, fdv: 148, change: -2.15, q4Low: 116.71, lowDate: "2025-12-18", bounce: 15.44 },
+    { symbol: "WLD", price: 0.5941, volume: 112.7, fdv: 5939, change: -2.18, q4Low: 0.4688, lowDate: "2025-12-31", bounce: 26.73 },
+    { symbol: "DEEP", price: 0.04008, volume: 3.1, fdv: 401, change: -2.35, q4Low: 0.03159, lowDate: "2025-12-19", bounce: 26.88 },
+    { symbol: "DOT", price: 2.175, volume: 65.2, fdv: 3577, change: -2.87, q4Low: 1.651, lowDate: "2025-12-26", bounce: 31.74 },
+    { symbol: "GAS", price: 2.088, volume: 3.0, fdv: 136, change: -3.15, q4Low: 1.724, lowDate: "2025-12-19", bounce: 21.11 },
+    { symbol: "XCN", price: 0.00495, volume: 3.4, fdv: 235, change: -3.22, q4Low: 0.004588, lowDate: "2025-11-21", bounce: 7.89 },
+    { symbol: "AR", price: 4.013, volume: 6.7, fdv: 260, change: -3.22, q4Low: 3.123, lowDate: "2025-12-18", bounce: 28.50 },
+    { symbol: "JST", price: 0.039565, volume: 1.3, fdv: 392, change: -3.58, q4Low: 0.033013, lowDate: "2025-11-04", bounce: 19.85 },
+    { symbol: "LINK", price: 13.543, volume: 152.4, fdv: 13451, change: -3.76, q4Low: 11.602, lowDate: "2025-11-21", bounce: 16.73 },
+    { symbol: "GALA", price: 0.00713, volume: 26.2, fdv: 332, change: -3.96, q4Low: 0.0057, lowDate: "2025-12-31", bounce: 25.09 },
+    { symbol: "USELESS", price: 0.10565, volume: 44.2, fdv: 105, change: -4.05, q4Low: 0.05452, lowDate: "2025-12-24", bounce: 93.78 },
+    { symbol: "MOCA", price: 0.02178, volume: 0.6, fdv: 194, change: -4.28, q4Low: 0.01833, lowDate: "2025-12-18", bounce: 18.82 },
+    { symbol: "ETC", price: 12.896, volume: 33.4, fdv: 1989, change: -4.63, q4Low: 11.296, lowDate: "2025-12-31", bounce: 14.16 },
+    { symbol: "PYTH", price: 0.0675, volume: 7.9, fdv: 675, change: -4.83, q4Low: 0.05306, lowDate: "2025-12-18", bounce: 27.21 },
+    { symbol: "APE", price: 0.2211, volume: 7.4, fdv: 220, change: -5.06, q4Low: 0.1886, lowDate: "2025-12-18", bounce: 17.23 },
+    { symbol: "SPX", price: 0.6416, volume: 25.1, fdv: 594, change: -5.15, q4Low: 0.4342, lowDate: "2025-11-22", bounce: 47.77 },
+    { symbol: "ROSE", price: 0.01278, volume: 9.0, fdv: 127, change: -5.20, q4Low: 0.00982, lowDate: "2025-12-21", bounce: 30.14 },
+    { symbol: "QTUM", price: 1.4, volume: 2.8, fdv: 151, change: -5.25, q4Low: 1.176, lowDate: "2025-12-26", bounce: 19.05 },
+    { symbol: "BIO", price: 0.04859, volume: 8.5, fdv: 161, change: -5.41, q4Low: 0.04007, lowDate: "2025-12-18", bounce: 21.26 },
+    { symbol: "IMX", price: 0.2795, volume: 11.4, fdv: 557, change: -5.69, q4Low: 0.2139, lowDate: "2025-12-19", bounce: 30.67 },
+    { symbol: "XLM", price: 0.23476, volume: 58.3, fdv: 11718, change: -5.80, q4Low: 0.1976, lowDate: "2025-12-31", bounce: 18.81 },
+    { symbol: "A", price: 0.1763, volume: 2.3, fdv: 370, change: -5.86, q4Low: 0.1416, lowDate: "2025-12-18", bounce: 24.51 },
+    { symbol: "SEI", price: 0.1256, volume: 39.9, fdv: 1255, change: -5.87, q4Low: 0.1052, lowDate: "2025-12-21", bounce: 19.39 },
+    { symbol: "SOON", price: 0.413, volume: 13.6, fdv: 407, change: -5.95, q4Low: 0.2961, lowDate: "2025-12-18", bounce: 39.48 },
+    { symbol: "ZK", price: 0.03345, volume: 7.3, fdv: 698, change: -6.07, q4Low: 0.02481, lowDate: "2025-12-18", bounce: 34.82 },
+    { symbol: "SUN", price: 0.019906, volume: 1.3, fdv: 395, change: -6.13, q4Low: 0.018485, lowDate: "2025-12-26", bounce: 7.69 },
+    { symbol: "ADA", price: 0.4036, volume: 230.0, fdv: 18084, change: -6.22, q4Low: 0.3276, lowDate: "2025-12-31", bounce: 23.20 },
+    { symbol: "IP", price: 2.131, volume: 35.7, fdv: 2169, change: -6.55, q4Low: 1.422, lowDate: "2025-12-25", bounce: 49.86 },
+    { symbol: "AKT", price: 0.4262, volume: 5.1, fdv: 121, change: -6.56, q4Low: 0.3482, lowDate: "2025-12-31", bounce: 22.40 },
+    { symbol: "TAO", price: 264.76, volume: 105.2, fdv: 5547, change: -6.63, q4Low: 206.15, lowDate: "2025-12-24", bounce: 28.43 },
+    { symbol: "VET", price: 0.012018, volume: 9.3, fdv: 1031, change: -6.65, q4Low: 0.009521, lowDate: "2025-12-18", bounce: 26.23 },
+    { symbol: "TRUMP", price: 5.474, volume: 334.8, fdv: 5462, change: -6.77, q4Low: 4.775, lowDate: "2025-12-24", bounce: 14.64 },
+    { symbol: "AWE", price: 0.0573, volume: 0.6, fdv: 111, change: -6.84, q4Low: 0.04479, lowDate: "2025-11-21", bounce: 27.93 },
+    { symbol: "S", price: 0.09275, volume: 15.9, fdv: 363, change: -6.94, q4Low: 0.06703, lowDate: "2025-12-24", bounce: 38.37 },
+    { symbol: "KSM", price: 7.904, volume: 2.0, fdv: 138, change: -6.95, q4Low: 6.387, lowDate: "2025-12-18", bounce: 23.75 },
+    { symbol: "NEO", price: 3.866, volume: 5.0, fdv: 386, change: -7.57, q4Low: 3.414, lowDate: "2025-12-18", bounce: 13.24 },
+    { symbol: "HBAR", price: 0.12634, volume: 38.8, fdv: 6286, change: -7.63, q4Low: 0.10283, lowDate: "2025-12-19", bounce: 22.86 },
+    { symbol: "TOSHI", price: 0.0003688, volume: 8.4, fdv: 155, change: -7.67, q4Low: 0.0002722, lowDate: "2025-12-31", bounce: 35.49 },
+    { symbol: "W", price: 0.03833, volume: 19.8, fdv: 382, change: -7.96, q4Low: 0.03161, lowDate: "2025-12-18", bounce: 21.26 },
+    { symbol: "ONDO", price: 0.4407, volume: 29.1, fdv: 4389, change: -8.29, q4Low: 0.358, lowDate: "2025-12-31", bounce: 23.10 },
+    { symbol: "KAS", price: 0.04926, volume: 10.9, fdv: 1331, change: -8.30, q4Low: 0.036, lowDate: "2025-11-21", bounce: 36.83 },
+    { symbol: "ARKM", price: 0.2109, volume: 9.7, fdv: 210, change: -8.36, q4Low: 0.1709, lowDate: "2025-12-18", bounce: 23.41 },
+    { symbol: "XVG", price: 0.006096, volume: 6.9, fdv: 101, change: -8.52, q4Low: 0.004601, lowDate: "2025-12-23", bounce: 32.49 },
+    { symbol: "MANA", price: 0.1389, volume: 6.9, fdv: 304, change: -9.37, q4Low: 0.1144, lowDate: "2025-12-24", bounce: 21.42 },
+    { symbol: "ICP", price: 3.248, volume: 31.2, fdv: 1767, change: -9.44, q4Low: 2.66, lowDate: "2025-12-31", bounce: 22.11 },
+    { symbol: "TIA", price: 0.5617, volume: 38.9, fdv: 650, change: -9.55, q4Low: 0.4287, lowDate: "2025-12-24", bounce: 31.02 },
+    { symbol: "BSV", price: 18.76, volume: 1.4, fdv: 372, change: -9.58, q4Low: 17.01, lowDate: "2025-12-19", bounce: 10.29 },
+    { symbol: "PROM", price: 8.101, volume: 2.2, fdv: 156, change: -9.76, q4Low: 6.805, lowDate: "2025-12-24", bounce: 19.04 },
+    { symbol: "TURBO", price: 0.0021544, volume: 27.6, fdv: 148, change: -9.86, q4Low: 0.0013175, lowDate: "2025-11-21", bounce: 63.52 },
+    { symbol: "ENS", price: 10.444, volume: 7.5, fdv: 1042, change: -10.22, q4Low: 8.77, lowDate: "2025-12-19", bounce: 19.09 },
+    { symbol: "SUPER", price: 0.2272, volume: 4.0, fdv: 226, change: -10.25, q4Low: 0.1702, lowDate: "2025-11-22", bounce: 33.49 },
+    { symbol: "FLUID", price: 3.056, volume: 9.4, fdv: 307, change: -10.42, q4Low: 2.379, lowDate: "2025-12-31", bounce: 28.46 },
+    { symbol: "RUNE", price: 0.5933, volume: 4.5, fdv: 251, change: -10.49, q4Low: 0.5386, lowDate: "2025-12-26", bounce: 10.16 },
+    { symbol: "ZORA", price: 0.04343, volume: 12.1, fdv: 433, change: -10.62, q4Low: 0.03427, lowDate: "2025-12-31", bounce: 26.73 },
+    { symbol: "INJ", price: 5.128, volume: 27.7, fdv: 510, change: -10.62, q4Low: 4.182, lowDate: "2025-12-31", bounce: 22.62 },
+    { symbol: "ENA", price: 0.2477, volume: 137.4, fdv: 3680, change: -10.73, q4Low: 0.1906, lowDate: "2025-12-18", bounce: 29.96 },
+    { symbol: "JUP", price: 0.2147, volume: 11.5, fdv: 1474, change: -10.83, q4Low: 0.1693, lowDate: "2025-12-18", bounce: 26.82 },
+    { symbol: "0G", price: 0.9854, volume: 21.1, fdv: 984, change: -10.88, q4Low: 0.6943, lowDate: "2025-12-18", bounce: 41.93 },
+    { symbol: "AXS", price: 0.952, volume: 6.3, fdv: 255, change: -10.97, q4Low: 0.786, lowDate: "2025-12-31", bounce: 21.12 },
+    { symbol: "SNX", price: 0.464, volume: 6.1, fdv: 158, change: -11.22, q4Low: 0.382, lowDate: "2025-12-18", bounce: 21.47 },
+    { symbol: "PENDLE", price: 2.2264, volume: 15.2, fdv: 627, change: -11.75, q4Low: 1.6524, lowDate: "2025-12-24", bounce: 34.74 },
+    { symbol: "TWT", price: 0.9013, volume: 1.7, fdv: 897, change: -12.20, q4Low: 0.7588, lowDate: "2025-12-25", bounce: 18.78 },
+    { symbol: "CAKE", price: 2.0413, volume: 8.1, fdv: 707, change: -12.37, q4Low: 1.7601, lowDate: "2025-12-18", bounce: 15.98 },
+    { symbol: "DASH", price: 43.05, volume: 25.3, fdv: 537, change: -12.45, q4Low: 35.02, lowDate: "2025-12-19", bounce: 22.93 },
+    { symbol: "RECALL", price: 0.109, volume: 2.4, fdv: 110, change: -12.52, q4Low: 0.0831, lowDate: "2025-12-01", bounce: 31.17 },
+    { symbol: "MET", price: 0.2809, volume: 5.9, fdv: 279, change: -12.68, q4Low: 0.203, lowDate: "2025-12-18", bounce: 38.37 },
+    { symbol: "THETA", price: 0.297, volume: 5.3, fdv: 295, change: -12.71, q4Low: 0.2538, lowDate: "2025-12-26", bounce: 17.02 },
+    { symbol: "MINA", price: 0.084, volume: 3.2, fdv: 106, change: -12.87, q4Low: 0.0724, lowDate: "2025-12-18", bounce: 16.02 },
+    { symbol: "AAVE", price: 165.78, volume: 86.3, fdv: 2638, change: -13.00, q4Low: 142.57, lowDate: "2025-12-31", bounce: 16.28 },
+    { symbol: "QNT", price: 80.09, volume: 4.6, fdv: 1166, change: -13.41, q4Low: 68.55, lowDate: "2025-11-04", bounce: 16.83 },
+    { symbol: "DYDX", price: 0.199, volume: 13.0, fdv: 190, change: -13.62, q4Low: 0.153, lowDate: "2025-12-23", bounce: 30.07 },
+    { symbol: "BAT", price: 0.2206, volume: 4.6, fdv: 330, change: -13.79, q4Low: 0.1581, lowDate: "2025-11-21", bounce: 39.53 },
+    { symbol: "ZETA", price: 0.07496, volume: 0.9, fdv: 157, change: -13.82, q4Low: 0.06549, lowDate: "2025-12-24", bounce: 14.46 },
+    { symbol: "DEXE", price: 3.392, volume: 1.2, fdv: 326, change: -13.87, q4Low: 2.795, lowDate: "2025-12-24", bounce: 21.36 },
+    { symbol: "UB", price: 0.03644, volume: 1.2, fdv: 363, change: -14.11, q4Low: 0.03015, lowDate: "2025-12-24", bounce: 20.86 },
+    { symbol: "GRT", price: 0.04065, volume: 12.0, fdv: 438, change: -14.18, q4Low: 0.03262, lowDate: "2025-12-31", bounce: 24.62 },
+    { symbol: "MORPHO", price: 1.1786, volume: 4.1, fdv: 1176, change: -14.46, q4Low: 1.0688, lowDate: "2025-12-31", bounce: 10.27 },
+    { symbol: "1INCH", price: 0.159, volume: 2.7, fdv: 237, change: -14.86, q4Low: 0.1365, lowDate: "2025-11-04", bounce: 16.48 },
+    { symbol: "RSR", price: 0.002845, volume: 3.1, fdv: 283, change: -15.26, q4Low: 0.00234, lowDate: "2025-12-26", bounce: 21.58 },
+    { symbol: "SAND", price: 0.12288, volume: 10.5, fdv: 366, change: -15.80, q4Low: 0.10667, lowDate: "2025-12-31", bounce: 15.20 },
+    { symbol: "LPT", price: 3.28, volume: 4.9, fdv: 154, change: -15.83, q4Low: 2.771, lowDate: "2025-12-26", bounce: 18.37 },
+    { symbol: "COAI", price: 0.4368, volume: 27.9, fdv: 433, change: -16.01, q4Low: 0.35, lowDate: "2025-11-21", bounce: 24.80 },
+    { symbol: "WAL", price: 0.1349, volume: 2.8, fdv: 673, change: -16.17, q4Low: 0.115, lowDate: "2025-12-30", bounce: 17.30 },
+    { symbol: "LINEA", price: 0.007124, volume: 6.3, fdv: 512, change: -17.17, q4Low: 0.00589, lowDate: "2025-12-18", bounce: 20.95 },
+    { symbol: "AERO", price: 0.5702, volume: 16.1, fdv: 1033, change: -17.33, q4Low: 0.4012, lowDate: "2025-12-31", bounce: 42.12 },
+    { symbol: "COMP", price: 26.56, volume: 5.9, fdv: 265, change: -17.64, q4Low: 23.34, lowDate: "2025-12-21", bounce: 13.80 },
+    { symbol: "MOVE", price: 0.03738, volume: 3.8, fdv: 372, change: -18.52, q4Low: 0.03105, lowDate: "2025-12-18", bounce: 20.39 },
+    { symbol: "NXPC", price: 0.3921, volume: 1.4, fdv: 392, change: -18.72, q4Low: 0.2903, lowDate: "2025-11-05", bounce: 35.07 },
+    { symbol: "T", price: 0.00901, volume: 1.8, fdv: 100, change: -18.85, q4Low: 0.00838, lowDate: "2025-12-31", bounce: 7.52 },
+    { symbol: "B", price: 0.1913, volume: 252.3, fdv: 191, change: -19.21, q4Low: 0.1321, lowDate: "2025-12-31", bounce: 44.81 },
+    { symbol: "KAITO", price: 0.5558, volume: 15.4, fdv: 556, change: -19.32, q4Low: 0.4687, lowDate: "2025-12-18", bounce: 18.58 },
+    { symbol: "FF", price: 0.09518, volume: 5.0, fdv: 945, change: -20.69, q4Low: 0.08451, lowDate: "2025-12-30", bounce: 12.63 },
+    { symbol: "HYPE", price: 25.204, volume: 175.0, fdv: 24188, change: -21.25, q4Low: 22.185, lowDate: "2025-12-19", bounce: 13.61 },
+    { symbol: "EIGEN", price: 0.4234, volume: 24.7, fdv: 749, change: -22.79, q4Low: 0.3383, lowDate: "2025-12-31", bounce: 25.16 },
+    { symbol: "KAIA", price: 0.06071, volume: 1.5, fdv: 354, change: -23.33, q4Low: 0.05349, lowDate: "2025-12-19", bounce: 13.50 },
+    { symbol: "PUMP", price: 0.002321, volume: 119.9, fdv: 2317, change: -23.53, q4Low: 0.001676, lowDate: "2025-12-24", bounce: 38.48 },
+    { symbol: "ATH", price: 0.0105, volume: 9.1, fdv: 444, change: -23.95, q4Low: 0.0084, lowDate: "2025-12-31", bounce: 25.00 },
+    { symbol: "STRK", price: 0.0882, volume: 16.0, fdv: 878, change: -24.23, q4Low: 0.0754, lowDate: "2025-12-23", bounce: 16.98 },
+    { symbol: "EGLD", price: 6.244, volume: 3.7, fdv: 181, change: -24.76, q4Low: 5.395, lowDate: "2025-12-31", bounce: 15.74 },
+    { symbol: "BERA", price: 0.6797, volume: 4.1, fdv: 354, change: -25.47, q4Low: 0.5367, lowDate: "2025-12-18", bounce: 26.64 },
+    { symbol: "DRIFT", price: 0.1763, volume: 1.5, fdv: 176, change: -25.85, q4Low: 0.1345, lowDate: "2025-12-19", bounce: 31.08 },
+    { symbol: "ASTER", price: 0.754, volume: 133.2, fdv: 5942, change: -26.69, q4Low: 0.6475, lowDate: "2025-12-23", bounce: 16.45 },
+    { symbol: "BEAT", price: 0.776, volume: 148.6, fdv: 779, change: -30.46, q4Low: 0.2058, lowDate: "2025-11-12", bounce: 277.07 },
+    { symbol: "MERL", price: 0.25538, volume: 16.9, fdv: 538, change: -30.52, q4Low: 0.20132, lowDate: "2025-11-25", bounce: 26.85 },
+    { symbol: "ME", price: 0.2188, volume: 2.4, fdv: 217, change: -35.15, q4Low: 0.1935, lowDate: "2025-12-23", bounce: 13.07 },
+    { symbol: "ALCH", price: 0.11695, volume: 3.0, fdv: 116, change: -45.83, q4Low: 0.06409, lowDate: "2025-11-03", bounce: 82.48 },
+    { symbol: "FLOW", price: 0.092, volume: 28.0, fdv: 157, change: -57.27, q4Low: 0.088, lowDate: "2025-12-27", bounce: 4.55 }
+];
+
+        let currentData = [...cryptoData];
+        let currentSort = { column: 'bounce', direction: 'desc' };
+        let currentFilter = 'all';
+        const maxVolume = Math.max(...cryptoData.map(d => d.volume));
+
+        function formatPrice(price) {
+            if (price >= 1000) return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (price >= 1) return '$' + price.toFixed(2);
+            if (price >= 0.01) return '$' + price.toFixed(4);
+            return '$' + price.toFixed(6);
+        }
+
+        function formatVolume(vol) {
+            if (vol >= 1000) return '$' + (vol / 1000).toFixed(2) + 'B';
+            return '$' + vol.toFixed(1) + 'M';
+        }
+
+        function formatFDV(fdv) {
+            if (fdv >= 1000000) return '$' + (fdv / 1000000).toFixed(2) + 'T';
+            if (fdv >= 1000) return '$' + (fdv / 1000).toFixed(1) + 'B';
+            return '$' + fdv.toFixed(0) + 'M';
+        }
+
+        function formatChange(change) {
+            const sign = change >= 0 ? '+' : '';
+            return sign + change.toFixed(2) + '%';
+        }
+
+        function formatBounce(bounce) {
+            if (bounce === null || bounce === undefined) return 'N/A';
+            return '+' + bounce.toFixed(1) + '%';
+        }
+
+        function getChangeClass(change) {
+            if (change > 0) return 'positive';
+            if (change < 0) return 'negative';
+            return 'neutral';
+        }
+
+        function getBounceClass(bounce) {
+            if (bounce === null || bounce === undefined) return 'neutral';
+            if (bounce > 200) return 'high';
+            return 'positive';
+        }
+
+        function updateStats() {
+            const gainers = currentData.filter(d => d.change > 0).length;
+            const losers = currentData.filter(d => d.change < 0).length;
+            const totalVol = currentData.reduce((sum, d) => sum + d.volume, 0);
+            const avgBounce = currentData.reduce((sum, d) => sum + (d.bounce || 0), 0) / currentData.length;
+
+            document.getElementById('total-count').textContent = currentData.length;
+            document.getElementById('gainers-count').textContent = gainers;
+            document.getElementById('losers-count').textContent = losers;
+            document.getElementById('avg-bounce').textContent = '+' + avgBounce.toFixed(0) + '%';
+            document.getElementById('total-volume').textContent = formatVolume(totalVol);
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            const noResults = document.getElementById('no-results');
+
+            if (currentData.length === 0) {
+                tbody.innerHTML = '';
+                noResults.style.display = 'block';
+                return;
+            }
+
+            noResults.style.display = 'none';
+
+            tbody.innerHTML = currentData.map((coin, index) => `
+                <tr>
+                    <td class="rank">${index + 1}</td>
+                    <td class="symbol">${coin.symbol}</td>
+                    <td class="price">${formatPrice(coin.price)}</td>
+                    <td class="volume">
+                        ${formatVolume(coin.volume)}
+                        <div class="volume-bar">
+                            <div class="volume-bar-fill" style="width: ${(coin.volume / maxVolume * 100)}%"></div>
+                        </div>
+                    </td>
+                    <td class="fdv">${formatFDV(coin.fdv)}</td>
+                    <td><span class="change ${getChangeClass(coin.change)}">${formatChange(coin.change)}</span></td>
+                    <td class="low-info">
+                        ${coin.q4Low ? formatPrice(coin.q4Low) : 'N/A'}
+                        <span class="low-date">${coin.lowDate || ''}</span>
+                    </td>
+                    <td><span class="bounce ${getBounceClass(coin.bounce)}">${formatBounce(coin.bounce)}</span></td>
+                </tr>
+            `).join('');
+
+            updateStats();
+        }
+
+        function sortData(column) {
+            const headers = document.querySelectorAll('th');
+            headers.forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
+
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = column === 'symbol' ? 'asc' : 'desc';
+            }
+
+            const header = document.querySelector(`th[data-sort="${column}"]`);
+            header.classList.add(currentSort.direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+
+            currentData.sort((a, b) => {
+                let valA, valB;
+                switch (column) {
+                    case 'rank': valA = cryptoData.indexOf(a); valB = cryptoData.indexOf(b); break;
+                    case 'symbol': valA = a.symbol; valB = b.symbol; break;
+                    case 'price': valA = a.price; valB = b.price; break;
+                    case 'volume': valA = a.volume; valB = b.volume; break;
+                    case 'fdv': valA = a.fdv; valB = b.fdv; break;
+                    case 'change': valA = a.change; valB = b.change; break;
+                    case 'q4Low': valA = a.q4Low || 0; valB = b.q4Low || 0; break;
+                    case 'bounce': valA = a.bounce || 0; valB = b.bounce || 0; break;
+                }
+
+                if (typeof valA === 'string') {
+                    return currentSort.direction === 'asc'
+                        ? valA.localeCompare(valB)
+                        : valB.localeCompare(valA);
+                }
+                return currentSort.direction === 'asc' ? valA - valB : valB - valA;
+            });
+
+            renderTable();
+        }
+
+        function applyFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+
+            let filtered = [...cryptoData];
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+
+            if (searchTerm) {
+                filtered = filtered.filter(c => c.symbol.toLowerCase().includes(searchTerm));
+            }
+
+            switch (filter) {
+                case 'gainers':
+                    filtered = filtered.filter(c => c.change > 0);
+                    break;
+                case 'losers':
+                    filtered = filtered.filter(c => c.change < 0);
+                    break;
+                case 'bigBounce':
+                    filtered = filtered.filter(c => c.bounce && c.bounce > 100);
+                    break;
+                case 'recentLow':
+                    filtered = filtered.filter(c => c.lowDate && c.lowDate >= '2025-12-01');
+                    break;
+                case 'top20':
+                    filtered = [...filtered].sort((a, b) => b.volume - a.volume).slice(0, 20);
+                    break;
+            }
+
+            currentData = filtered;
+            sortData(currentSort.column);
+        }
+
+        // Event listeners
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => sortData(th.dataset.sort));
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => applyFilter(btn.dataset.filter));
+        });
+
+        document.getElementById('search').addEventListener('input', (e) => {
+            applyFilter(currentFilter);
+        });
+
+        // Initialize
+        document.getElementById('timestamp').textContent =
+            `Data: ${new Date().toLocaleString()} | Q4 Low = Lowest Nov 1 - Dec 31, 2025 | Bounce = % from Q4 Low`;
+        sortData('bounce'); // Default sort by bounce
+    </script>
+</body>
+</html>

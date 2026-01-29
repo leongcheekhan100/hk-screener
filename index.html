@@ -455,6 +455,40 @@
         .manual-close-btn:hover {
             background: #0f0;
         }
+
+        /* Manual Help Button */
+        .manual-help-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .manual-help-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .manual-help-img {
+            width: 64px;
+            height: 64px;
+            border: 2px solid #fff;
+            object-fit: cover;
+            image-rendering: pixelated;
+        }
+
+        .manual-help-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            color: #0f0;
+            margin-top: 4px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -544,6 +578,10 @@
                 <h1>HK Screener</h1>
                 <p class="subtitle">Binance Futures USDT-M Perpetuals | 8 Market Cap Categories</p>
                 <p class="subtitle" id="report-time">Loading...</p>
+            </div>
+            <div class="manual-help-btn" id="manual-help-btn">
+                <img src="manual_btn.webp" alt="Help" class="manual-help-img">
+                <span class="manual-help-text">CLICK ME</span>
             </div>
         </div>
     </header>
@@ -1316,16 +1354,18 @@ const coinNotes = {};
         attachDragEvents();
     }
 
-    // Welcome Modal -> Manual Modal
+    // Welcome Modal - just close
     document.getElementById('welcome-btn').addEventListener('click', function() {
         const welcomeOverlay = document.getElementById('welcome-overlay');
-        const manualOverlay = document.getElementById('manual-overlay');
-
         welcomeOverlay.classList.add('hidden');
-        setTimeout(() => {
-            welcomeOverlay.style.display = 'none';
-            manualOverlay.classList.add('show');
-        }, 300);
+        setTimeout(() => welcomeOverlay.style.display = 'none', 300);
+    });
+
+    // Manual Help Button - open manual
+    document.getElementById('manual-help-btn').addEventListener('click', function() {
+        const manualOverlay = document.getElementById('manual-overlay');
+        manualOverlay.style.display = 'flex';
+        setTimeout(() => manualOverlay.classList.add('show'), 10);
     });
 
     // Close Manual Modal
@@ -1333,7 +1373,10 @@ const coinNotes = {};
         const manualOverlay = document.getElementById('manual-overlay');
         manualOverlay.classList.remove('show');
         manualOverlay.classList.add('hidden');
-        setTimeout(() => manualOverlay.style.display = 'none', 300);
+        setTimeout(() => {
+            manualOverlay.style.display = 'none';
+            manualOverlay.classList.remove('hidden');
+        }, 300);
     });
     </script>
 </body>

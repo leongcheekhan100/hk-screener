@@ -1,47 +1,93 @@
 #!/usr/bin/env python3
 """
-Crypto Market Screener v3
+HK Screener v4
 - Fetches Binance Futures USDT-M perpetual contracts
 - Cross-references with CoinGecko AND CoinMarketCap (OR logic)
 - Calculates bounce from Q4 2025 lows
-- Filters by FDV > $100M
-- Tracks new coins joining the dashboard
+- 8 Market Cap Categories with new coin tracking
+- Persistent notes per coin
 """
 
 import requests
 import time
 import os
 import json
+import subprocess
+import platform
+import re
 from datetime import datetime, timezone
 
 # CoinMarketCap API Key
 CMC_API_KEY = os.environ.get("CMC_API_KEY", "68c6b851ef0348bca072f6dff1f89c4d")
 
-# History file to track coins across runs
-HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "coins_history.json")
+# File paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+HISTORY_FILE = os.path.join(BASE_DIR, "coins_history.json")
+NOTES_FILE = os.path.join(BASE_DIR, "coin_notes.json")
+
+# Market Cap Categories (non-overlapping boundaries)
+# Using > lower and <= upper for non-overlapping ranges
+MCAP_CATEGORIES = [
+    {"id": "micro", "name": "Micro Cap", "label": "$25M-$50M", "min": 25_000_000, "max": 50_000_000},
+    {"id": "small", "name": "Small Cap", "label": "$50M-$100M", "min": 50_000_000, "max": 100_000_000},
+    {"id": "low", "name": "Low Cap", "label": "$100M-$250M", "min": 100_000_000, "max": 250_000_000},
+    {"id": "midlow", "name": "Mid-Low Cap", "label": "$250M-$500M", "min": 250_000_000, "max": 500_000_000},
+    {"id": "mid", "name": "Mid Cap", "label": "$500M-$750M", "min": 500_000_000, "max": 750_000_000},
+    {"id": "midhigh", "name": "Mid-High Cap", "label": "$750M-$1B", "min": 750_000_000, "max": 1_000_000_000},
+    {"id": "high", "name": "High Cap", "label": "$1B-$1.5B", "min": 1_000_000_000, "max": 1_500_000_000},
+    {"id": "mega", "name": "Mega Cap", "label": "$1.5B+", "min": 1_500_000_000, "max": float('inf')},
+]
+
 
 def load_coin_history():
-    """Load previous coin list from history file"""
+    """Load previous coin lists from history file (per category)"""
     try:
         if os.path.exists(HISTORY_FILE):
             with open(HISTORY_FILE, 'r') as f:
                 data = json.load(f)
-                return set(data.get("coins", []))
+                # Support both old format (single list) and new format (per category)
+                if "categories" in data:
+                    return {cat: set(coins) for cat, coins in data["categories"].items()}
+                elif "coins" in data:
+                    # Old format - treat as "all" category
+                    return {"all": set(data["coins"])}
     except Exception as e:
         print(f"   Warning: Could not load history file: {e}")
-    return set()
+    return {}
 
-def save_coin_history(coins):
-    """Save current coin list to history file"""
+
+def save_coin_history(category_coins):
+    """Save current coin lists to history file (per category)"""
     try:
         data = {
             "last_updated": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC'),
-            "coins": sorted(list(coins))
+            "categories": {cat: sorted(list(coins)) for cat, coins in category_coins.items()}
         }
         with open(HISTORY_FILE, 'w') as f:
             json.dump(data, f, indent=2)
     except Exception as e:
         print(f"   Warning: Could not save history file: {e}")
+
+
+def load_coin_notes():
+    """Load coin notes from JSON file"""
+    try:
+        if os.path.exists(NOTES_FILE):
+            with open(NOTES_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"   Warning: Could not load notes file: {e}")
+    return {}
+
+
+def save_coin_notes(notes):
+    """Save coin notes to JSON file"""
+    try:
+        with open(NOTES_FILE, 'w') as f:
+            json.dump(notes, f, indent=2)
+    except Exception as e:
+        print(f"   Warning: Could not save notes file: {e}")
+
 
 def fetch_binance_futures_data():
     """Fetch 24hr ticker data from Binance Futures"""
@@ -49,6 +95,7 @@ def fetch_binance_futures_data():
     response = requests.get(url, timeout=30)
     response.raise_for_status()
     return response.json()
+
 
 def fetch_q4_low(symbol, retries=3):
     """Fetch the lowest price between Nov 1 - Dec 31, 2025 from Binance Futures"""
@@ -91,6 +138,7 @@ def fetch_q4_low(symbol, retries=3):
 
     return None, None
 
+
 def fetch_coingecko_data():
     """Fetch market data from CoinGecko (FDV, MCap, 24h & 30d change)"""
     url = "https://api.coingecko.com/api/v3/coins/markets"
@@ -122,10 +170,17 @@ def fetch_coingecko_data():
             print(f"   CoinGecko error on page {page}: {e}")
             break
 
-    # Convert to symbol-keyed dict
+    # Convert to symbol-keyed dict (keep highest market cap on collision)
     cg_by_symbol = {}
     for coin in all_coins:
         symbol = coin.get("symbol", "").upper()
+        market_cap = coin.get("market_cap") or 0
+
+        if symbol in cg_by_symbol:
+            existing_mcap = cg_by_symbol[symbol].get("market_cap") or 0
+            if market_cap <= existing_mcap:
+                continue
+
         cg_by_symbol[symbol] = {
             "fdv": coin.get("fully_diluted_valuation"),
             "market_cap": coin.get("market_cap"),
@@ -136,6 +191,7 @@ def fetch_coingecko_data():
 
     print(f"   CoinGecko: {len(cg_by_symbol)} coins")
     return cg_by_symbol
+
 
 def fetch_coinmarketcap_data():
     """Fetch market data from CoinMarketCap (FDV, MCap, 24h & 30d change)"""
@@ -180,6 +236,12 @@ def fetch_coinmarketcap_data():
         for coin in coins:
             symbol = coin.get("symbol", "").upper()
             quote = coin.get("quote", {}).get("USD", {})
+            market_cap = quote.get("market_cap") or 0
+
+            if symbol in cmc_by_symbol:
+                existing_mcap = cmc_by_symbol[symbol].get("market_cap") or 0
+                if market_cap <= existing_mcap:
+                    continue
 
             cmc_by_symbol[symbol] = {
                 "fdv": quote.get("fully_diluted_market_cap"),
@@ -196,20 +258,18 @@ def fetch_coinmarketcap_data():
         print(f"   CoinMarketCap error: {e}")
         return {}
 
+
 def merge_market_data(cg_data, cmc_data):
     """Merge CoinGecko and CoinMarketCap data with OR logic."""
     merged = {}
 
-    # Start with all CoinGecko data
     for symbol, data in cg_data.items():
         merged[symbol] = data.copy()
 
-    # Add CMC data for symbols not in CoinGecko OR where CoinGecko has missing data
     for symbol, cmc_info in cmc_data.items():
         if symbol not in merged:
             merged[symbol] = cmc_info.copy()
         else:
-            # Fill in missing fields from CMC
             if merged[symbol].get("fdv") is None and cmc_info.get("fdv") is not None:
                 merged[symbol]["fdv"] = cmc_info["fdv"]
             if merged[symbol].get("market_cap") is None and cmc_info.get("market_cap") is not None:
@@ -222,20 +282,31 @@ def merge_market_data(cg_data, cmc_data):
     print(f"   Merged: {len(merged)} unique coins")
     return merged
 
+
+def categorize_coin(market_cap):
+    """Determine which category a coin belongs to based on market cap."""
+    for cat in MCAP_CATEGORIES:
+        if cat["min"] < market_cap <= cat["max"]:
+            return cat["id"]
+    return None
+
+
 def main():
     print("=" * 100)
-    print("CRYPTO MARKET SCREENER v3 - Real-Time Data")
+    print("HK SCREENER v4 - Real-Time Data")
     print("Data Sources: Binance Futures + CoinGecko + CoinMarketCap")
     print(f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print("=" * 100)
 
-    # Load previous coin history
-    print("\n[1/6] Loading coin history...")
+    # Load previous coin history and notes
+    print("\n[1/7] Loading coin history and notes...")
     previous_coins = load_coin_history()
-    print(f"   Previous run had {len(previous_coins)} coins")
+    coin_notes = load_coin_notes()
+    print(f"   Previous history: {sum(len(v) for v in previous_coins.values())} coins across {len(previous_coins)} categories")
+    print(f"   Loaded {len(coin_notes)} coin notes")
 
-    # Step 2: Fetch Binance Futures data
-    print("\n[2/6] Fetching Binance Futures USDT-M perpetual data...")
+    # Fetch Binance Futures data
+    print("\n[2/7] Fetching Binance Futures USDT-M perpetual data...")
     binance_data = fetch_binance_futures_data()
 
     usdt_perps = {}
@@ -245,7 +316,6 @@ def main():
             volume_usd = float(ticker.get("quoteVolume", 0))
             base_symbol = symbol.replace("USDT", "")
 
-            # Handle 1000-prefixed symbols
             lookup_symbol = base_symbol
             if base_symbol.startswith("1000"):
                 lookup_symbol = base_symbol[4:]
@@ -260,55 +330,68 @@ def main():
 
     print(f"   Found {len(usdt_perps)} USDT-M perpetual pairs")
 
-    # Step 3: Fetch market data from both sources
-    print("\n[3/6] Fetching market data (FDV, MCap, 24h & 30d change)...")
+    # Fetch market data from both sources
+    print("\n[3/7] Fetching market data (FDV, MCap, 24h & 30d change)...")
     cg_data = fetch_coingecko_data()
     cmc_data = fetch_coinmarketcap_data()
 
     # Merge with OR logic
-    print("\n[4/6] Merging data...")
+    print("\n[4/7] Merging data...")
     merged_data = merge_market_data(cg_data, cmc_data)
 
-    # Filter and merge with Binance data
-    print("\n[5/6] Applying FDV filter (>$100M)...")
-    filtered_coins = []
+    # Categorize coins into 8 market cap categories
+    print("\n[5/7] Categorizing coins into 8 market cap tiers...")
+    category_coins = {cat["id"]: [] for cat in MCAP_CATEGORIES}
 
     for symbol, binance_info in usdt_perps.items():
         lookup_symbol = binance_info.get("lookup_symbol", symbol)
         market_info = merged_data.get(lookup_symbol)
 
-        if market_info and market_info.get("fdv"):
-            fdv = market_info["fdv"]
+        if market_info:
+            fdv = market_info.get("fdv") or 0
             market_cap = market_info.get("market_cap") or 0
 
-            if fdv > 100_000_000:
-                # Use Binance 24h change as primary, fallback to CG/CMC
-                change_24h = binance_info.get("change_24h_binance")
-                if change_24h == 0 and market_info.get("price_change_24h"):
-                    change_24h = market_info.get("price_change_24h")
+            change_24h = binance_info.get("change_24h_binance")
+            if change_24h == 0 and market_info.get("price_change_24h"):
+                change_24h = market_info.get("price_change_24h")
 
-                filtered_coins.append({
-                    "symbol": symbol,
-                    "price": binance_info["price"],
-                    "binance_vol_24h_m": binance_info["volume_24h_usd"] / 1_000_000,
-                    "market_cap_m": market_cap / 1_000_000 if market_cap else 0,
-                    "fdv_m": fdv / 1_000_000,
-                    "change_24h": change_24h or 0,
-                    "change_30d": market_info.get("price_change_30d") or 0,
-                })
+            coin_data = {
+                "symbol": symbol,
+                "price": binance_info["price"],
+                "binance_vol_24h_m": binance_info["volume_24h_usd"] / 1_000_000,
+                "market_cap_m": market_cap / 1_000_000 if market_cap else 0,
+                "fdv_m": fdv / 1_000_000 if fdv else 0,
+                "change_24h": change_24h or 0,
+                "change_30d": market_info.get("price_change_30d") or 0,
+            }
 
-    print(f"   {len(filtered_coins)} coins match FDV criteria")
+            # Categorize by market cap
+            cat_id = categorize_coin(market_cap)
+            if cat_id:
+                category_coins[cat_id].append(coin_data)
 
-    # Step 6: Fetch Q4 2025 lows
-    print("\n[6/6] Fetching Q4 2025 lows (this may take a minute)...")
-    final_data = []
-    total = len(filtered_coins)
+    # Print category counts
+    for cat in MCAP_CATEGORIES:
+        count = len(category_coins[cat["id"]])
+        print(f"   {cat['name']} ({cat['label']}): {count} coins")
 
-    for i, coin in enumerate(filtered_coins):
+    # Fetch Q4 2025 lows for all coins
+    print("\n[6/7] Fetching Q4 2025 lows (this may take a few minutes)...")
+
+    all_coins_to_process = []
+    for cat_id, coins in category_coins.items():
+        for coin in coins:
+            coin["_category"] = cat_id
+            all_coins_to_process.append(coin)
+
+    total = len(all_coins_to_process)
+    print(f"   Processing {total} coins across all categories...")
+
+    for i, coin in enumerate(all_coins_to_process):
         symbol = coin["symbol"]
         current_price = coin["price"]
 
-        if (i + 1) % 20 == 0 or i == 0:
+        if (i + 1) % 50 == 0 or i == 0:
             print(f"   Processing {i + 1}/{total}...")
 
         low_price, low_date = fetch_q4_low(symbol)
@@ -323,73 +406,62 @@ def main():
             coin["q4_low_date"] = None
             coin["bounce_from_low"] = None
 
-        final_data.append(coin)
-
         if (i + 1) % 10 == 0:
-            time.sleep(0.5)
+            time.sleep(0.3)
 
-    # Detect new coins
-    current_coins = set(coin["symbol"] for coin in final_data)
-    new_coins = current_coins - previous_coins if previous_coins else set()
+    # Rebuild category_coins with processed data and detect new coins
+    print("\n[7/7] Detecting new coins and sorting...")
 
-    # Mark new coins
-    for coin in final_data:
-        coin["is_new"] = coin["symbol"] in new_coins
+    current_category_coins = {cat["id"]: set() for cat in MCAP_CATEGORIES}
+    final_category_data = {cat["id"]: [] for cat in MCAP_CATEGORIES}
+    new_coins_by_category = {cat["id"]: set() for cat in MCAP_CATEGORIES}
 
-    # Save current coins to history
-    save_coin_history(current_coins)
+    for coin in all_coins_to_process:
+        cat_id = coin["_category"]
+        symbol = coin["symbol"]
+        del coin["_category"]
 
-    # Sort by 30-day change descending
-    final_data.sort(key=lambda x: x["change_30d"], reverse=True)
+        current_category_coins[cat_id].add(symbol)
 
-    print(f"   {len(final_data)} coins in final list")
-    print(f"   {len(new_coins)} NEW coins detected")
-    if new_coins:
-        print(f"   New coins: {', '.join(sorted(new_coins))}")
+        # Check if coin is new to this category
+        prev_cat_coins = previous_coins.get(cat_id, set())
+        is_new = symbol not in prev_cat_coins
+        coin["is_new"] = is_new
 
-    # Print results table
-    print("\n" + "=" * 130)
-    print("RESULTS: Binance Futures USDT-M | FDV >$100M")
-    print("Sorted by 30-Day Change % (Descending)")
-    print("=" * 130)
+        if is_new:
+            new_coins_by_category[cat_id].add(symbol)
 
-    print(f"{'Symbol':<12} {'Price':>12} {'MCap':>10} {'FDV':>10} {'24h Vol':>10} {'D1%':>8} {'30D%':>8} {'Q4 Low':>12} {'Bounce':>8} {'New':>5}")
-    print(f"{'':12} {'(USD)':>12} {'(M)':>10} {'(M)':>10} {'(M)':>10} {'':>8} {'':>8} {'(USD)':>12} {'(%)':>8} {'':>5}")
-    print("-" * 130)
+        final_category_data[cat_id].append(coin)
 
-    for row in final_data:
-        price_str = f"${row['price']:,.4f}" if row['price'] < 1 else f"${row['price']:,.2f}"
-        mcap_str = f"${row['market_cap_m']:,.0f}M" if row['market_cap_m'] > 0 else "N/A"
-        fdv_str = f"${row['fdv_m']:,.0f}M"
-        vol_str = f"${row['binance_vol_24h_m']:,.0f}M"
-        d1_str = f"{row['change_24h']:+.1f}%"
-        d30_str = f"{row['change_30d']:+.1f}%"
-        new_str = "NEW" if row.get('is_new') else ""
+    # Sort each category by 30-day change descending
+    for cat_id in final_category_data:
+        final_category_data[cat_id].sort(key=lambda x: x["change_30d"], reverse=True)
 
-        if row.get('q4_low'):
-            low_str = f"${row['q4_low']:,.4f}" if row['q4_low'] < 1 else f"${row['q4_low']:,.2f}"
-            bounce_str = f"+{row['bounce_from_low']:.0f}%"
-        else:
-            low_str = "N/A"
-            bounce_str = "N/A"
+    # Save updated history
+    save_coin_history(current_category_coins)
 
-        print(f"{row['symbol']:<12} {price_str:>12} {mcap_str:>10} {fdv_str:>10} {vol_str:>10} {d1_str:>8} {d30_str:>8} {low_str:>12} {bounce_str:>8} {new_str:>5}")
+    # Print summary
+    print("\n" + "=" * 100)
+    print("SUMMARY")
+    print("=" * 100)
+    total_coins = sum(len(coins) for coins in final_category_data.values())
+    total_new = sum(len(coins) for coins in new_coins_by_category.values())
+    print(f"Total coins: {total_coins}")
+    print(f"New coins this run: {total_new}")
 
-    print("-" * 130)
-    print(f"Total: {len(final_data)} coins | New coins this run: {len(new_coins)}")
-    print("=" * 130)
+    for cat in MCAP_CATEGORIES:
+        cat_id = cat["id"]
+        count = len(final_category_data[cat_id])
+        new_count = len(new_coins_by_category[cat_id])
+        new_str = f" ({new_count} NEW)" if new_count > 0 else ""
+        print(f"   {cat['name']}: {count} coins{new_str}")
+        if new_coins_by_category[cat_id]:
+            print(f"      New: {', '.join(sorted(new_coins_by_category[cat_id]))}")
 
-    # Export data for HTML
-    print("\n// JavaScript data for HTML (copy this):")
+    # Generate JavaScript data
     report_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
-    print(f'const reportGeneratedAt = "{report_time}";')
 
-    # Export new coins list
-    new_coins_list = sorted(list(new_coins))
-    print(f'const newCoins = new Set({json.dumps(new_coins_list)});')
-
-    print("const cryptoData = [")
-    for row in final_data:
+    def format_coin_js(row, notes):
         bounce = row.get('bounce_from_low')
         bounce_val = f"{bounce:.2f}" if bounce is not None else "null"
         q4_low = row.get('q4_low')
@@ -397,10 +469,77 @@ def main():
         low_date = row.get('q4_low_date')
         low_date_val = f'"{low_date}"' if low_date else "null"
         is_new = "true" if row.get('is_new') else "false"
-        print(f'    {{ symbol: "{row["symbol"]}", price: {row["price"]}, mcap: {row["market_cap_m"]:.0f}, fdv: {row["fdv_m"]:.0f}, volume: {row["binance_vol_24h_m"]:.1f}, d1: {row["change_24h"]:.2f}, d30: {row["change_30d"]:.2f}, q4Low: {q4_low_val}, lowDate: {low_date_val}, bounce: {bounce_val}, isNew: {is_new} }},')
-    print("];")
+        note = notes.get(row["symbol"], "").replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
+        symbol = row["symbol"].replace('\\', '\\\\').replace('"', '\\"')
+        return f'    {{ symbol: "{symbol}", price: {row["price"]}, mcap: {row["market_cap_m"]:.0f}, fdv: {row["fdv_m"]:.0f}, volume: {row["binance_vol_24h_m"]:.1f}, d1: {row["change_24h"]:.2f}, d30: {row["change_30d"]:.2f}, q4Low: {q4_low_val}, lowDate: {low_date_val}, bounce: {bounce_val}, isNew: {is_new}, notes: "{note}" }}'
 
-    return final_data
+    # Build JavaScript code block
+    js_lines = []
+    js_lines.append(f'const reportGeneratedAt = "{report_time}";')
+
+    # Categories metadata
+    js_lines.append("const mcapCategories = [")
+    for cat in MCAP_CATEGORIES:
+        new_list = sorted(list(new_coins_by_category[cat["id"]]))
+        js_lines.append(f'    {{ id: "{cat["id"]}", name: "{cat["name"]}", label: "{cat["label"]}", newCoins: {json.dumps(new_list)} }},')
+    js_lines.append("];")
+
+    # Data for each category
+    for cat in MCAP_CATEGORIES:
+        cat_id = cat["id"]
+        var_name = f"{cat_id}Data"
+        js_lines.append(f"const {var_name} = [")
+        for row in final_category_data[cat_id]:
+            js_lines.append(format_coin_js(row, coin_notes) + ",")
+        js_lines.append("];")
+
+    # Coin notes object
+    js_lines.append(f"const coinNotes = {json.dumps(coin_notes)};")
+    js_lines.append("")
+
+    js_code = "\n".join(js_lines)
+
+    # Update HTML file
+    html_file = os.path.join(BASE_DIR, "crypto_screener_v2.html")
+    if os.path.exists(html_file):
+        print(f"\nUpdating HTML file...")
+        try:
+            # Read the new HTML template
+            with open(html_file, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+
+            # Find the script tag and replace just the data section
+            start_marker = 'const reportGeneratedAt = "'
+            end_marker = 'const coinNotes = {};'
+
+            start_idx = html_content.find(start_marker)
+            end_idx = html_content.find(end_marker)
+
+            if start_idx != -1 and end_idx != -1:
+                end_idx += len(end_marker)
+                html_content = html_content[:start_idx] + js_code.strip() + html_content[end_idx:]
+
+            with open(html_file, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+
+            print(f"   HTML file updated: {html_file}")
+
+            # Auto-open HTML file
+            print(f"   Opening HTML in browser...")
+            if platform.system() == 'Darwin':
+                subprocess.run(['open', html_file], check=True)
+            elif platform.system() == 'Windows':
+                os.startfile(html_file)
+            else:
+                subprocess.run(['xdg-open', html_file], check=True)
+
+        except Exception as e:
+            print(f"   Warning: Could not update HTML file: {e}")
+    else:
+        print(f"\n   Warning: HTML file not found at {html_file}")
+
+    return final_category_data
+
 
 if __name__ == "__main__":
     main()

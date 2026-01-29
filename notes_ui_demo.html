@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notes UI Options Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #00d4ff;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0,212,255,0.3);
+        }
+        .option-label {
+            background: rgba(0,212,255,0.2);
+            color: #00d4ff;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .description {
+            color: #888;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        .pros-cons {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+        }
+        .pros, .cons {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        .pros { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); }
+        .cons { background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.3); }
+        .pros strong { color: #00ff88; }
+        .cons strong { color: #ff4757; }
+        .pros li, .cons li { margin: 5px 0; margin-left: 15px; }
+
+        /* Table styles */
+        .table-container {
+            overflow-x: auto;
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            padding: 12px;
+            text-align: right;
+            background: rgba(0,212,255,0.1);
+            color: #00d4ff;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        th:first-child { text-align: left; }
+        td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9rem;
+        }
+        td:first-child { text-align: left; font-weight: 600; }
+        tr:hover { background: rgba(255,255,255,0.05); }
+        .positive { color: #00ff88; }
+        .negative { color: #ff4757; }
+
+        /* Option 1: Inline Column */
+        .notes-inline {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: #e0e0e0;
+            font-size: 0.8rem;
+            width: 150px;
+            resize: none;
+        }
+        .notes-inline:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+        .notes-inline::placeholder { color: #666; }
+
+        /* Option 2: Expandable Row */
+        .expandable-row td {
+            cursor: pointer;
+        }
+        .expand-icon {
+            color: #00d4ff;
+            margin-right: 8px;
+            transition: transform 0.3s;
+        }
+        .expand-icon.expanded { transform: rotate(90deg); }
+        .notes-row {
+            background: rgba(0,212,255,0.05);
+        }
+        .notes-row td {
+            padding: 0;
+        }
+        .notes-expanded {
+            padding: 15px 20px;
+            border-left: 3px solid #00d4ff;
+            margin-left: 20px;
+        }
+        .notes-expanded textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 10px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            min-height: 80px;
+            resize: vertical;
+        }
+        .notes-expanded textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .notes-expanded label {
+            display: block;
+            color: #00d4ff;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+        /* Option 3: Side Panel */
+        .side-panel-container {
+            display: flex;
+            gap: 20px;
+        }
+        .side-panel-table {
+            flex: 1;
+        }
+        .side-panel {
+            width: 300px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        .side-panel h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .side-panel .coin-symbol {
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.5rem;
+        }
+        .side-panel textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            min-height: 150px;
+            resize: vertical;
+        }
+        .side-panel textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .side-panel .save-status {
+            font-size: 0.75rem;
+            color: #00ff88;
+            margin-top: 10px;
+        }
+        .selected-row {
+            background: rgba(0,212,255,0.15) !important;
+            border-left: 3px solid #00d4ff;
+        }
+
+        /* Option 4: Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal {
+            background: linear-gradient(135deg, #1a1a3a 0%, #0a0a1a 100%);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 30px;
+            width: 500px;
+            max-width: 90vw;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h3 {
+            color: #00d4ff;
+            font-size: 1.3rem;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-close:hover { color: #ff4757; }
+        .modal textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            min-height: 200px;
+            resize: vertical;
+        }
+        .modal textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-btn {
+            padding: 10px 25px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .modal-btn.primary {
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            color: #000;
+            font-weight: 600;
+        }
+        .modal-btn.secondary {
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+        }
+        .notes-icon {
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+        .notes-icon:hover {
+            background: rgba(0,212,255,0.2);
+            border-color: #00d4ff;
+        }
+        .notes-icon.has-notes {
+            background: rgba(0,212,255,0.2);
+            border-color: #00d4ff;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent);
+            margin: 60px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Notes UI Options Demo</h1>
+
+    <!-- Option 1: Inline Column -->
+    <h2>Option 1: Inline Column</h2>
+    <span class="option-label">Compact & Quick</span>
+    <p class="description">A small text input directly in the table row. Best for short, quick notes.</p>
+
+    <div class="pros-cons">
+        <div class="pros">
+            <strong>Pros:</strong>
+            <ul>
+                <li>Always visible</li>
+                <li>Quick to edit</li>
+                <li>No extra clicks needed</li>
+            </ul>
+        </div>
+        <div class="cons">
+            <strong>Cons:</strong>
+            <ul>
+                <li>Limited space for text</li>
+                <li>Makes table wider</li>
+                <li>Can look cluttered</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>MCap</th>
+                    <th>D1 %</th>
+                    <th>30D %</th>
+                    <th style="text-align: left;">Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>BTC</td>
+                    <td>$43,250</td>
+                    <td>$847B</td>
+                    <td class="positive">+2.3%</td>
+                    <td class="positive">+15.8%</td>
+                    <td><input type="text" class="notes-inline" placeholder="Add note..." value="Watch $45k resistance"></td>
+                </tr>
+                <tr>
+                    <td>ETH</td>
+                    <td>$2,280</td>
+                    <td>$274B</td>
+                    <td class="negative">-1.2%</td>
+                    <td class="positive">+8.4%</td>
+                    <td><input type="text" class="notes-inline" placeholder="Add note..."></td>
+                </tr>
+                <tr>
+                    <td>SOL</td>
+                    <td>$98.50</td>
+                    <td>$42B</td>
+                    <td class="positive">+5.1%</td>
+                    <td class="positive">+22.3%</td>
+                    <td><input type="text" class="notes-inline" placeholder="Add note..." value="Strong momentum"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Option 2: Expandable Row -->
+    <h2>Option 2: Expandable Row</h2>
+    <span class="option-label">Clean & Detailed</span>
+    <p class="description">Click a row to expand and reveal a larger notes area below. Best for detailed notes.</p>
+
+    <div class="pros-cons">
+        <div class="pros">
+            <strong>Pros:</strong>
+            <ul>
+                <li>Clean table layout</li>
+                <li>Plenty of space for notes</li>
+                <li>Notes hidden until needed</li>
+            </ul>
+        </div>
+        <div class="cons">
+            <strong>Cons:</strong>
+            <ul>
+                <li>Requires click to view</li>
+                <li>Can only see one note at a time</li>
+                <li>Row shifting can be jarring</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>MCap</th>
+                    <th>D1 %</th>
+                    <th>30D %</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="expandable-row">
+                    <td><span class="expand-icon">&#9654;</span>BTC</td>
+                    <td>$43,250</td>
+                    <td>$847B</td>
+                    <td class="positive">+2.3%</td>
+                    <td class="positive">+15.8%</td>
+                </tr>
+                <tr class="expandable-row">
+                    <td><span class="expand-icon expanded">&#9654;</span>ETH</td>
+                    <td>$2,280</td>
+                    <td>$274B</td>
+                    <td class="negative">-1.2%</td>
+                    <td class="positive">+8.4%</td>
+                </tr>
+                <tr class="notes-row">
+                    <td colspan="5">
+                        <div class="notes-expanded">
+                            <label>Notes for ETH:</label>
+                            <textarea placeholder="Add your notes here...">Layer 2 activity increasing significantly. Watch for ETH/BTC ratio improvement. Key levels: Support $2,100, Resistance $2,500.</textarea>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="expandable-row">
+                    <td><span class="expand-icon">&#9654;</span>SOL</td>
+                    <td>$98.50</td>
+                    <td>$42B</td>
+                    <td class="positive">+5.1%</td>
+                    <td class="positive">+22.3%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Option 3: Side Panel -->
+    <h2>Option 3: Side Panel</h2>
+    <span class="option-label">Professional & Persistent</span>
+    <p class="description">Click a coin to open a notes panel on the right side. Best for research workflow.</p>
+
+    <div class="pros-cons">
+        <div class="pros">
+            <strong>Pros:</strong>
+            <ul>
+                <li>Large notes area</li>
+                <li>Always visible when editing</li>
+                <li>Professional feel</li>
+            </ul>
+        </div>
+        <div class="cons">
+            <strong>Cons:</strong>
+            <ul>
+                <li>Takes screen space</li>
+                <li>Table becomes narrower</li>
+                <li>May need scrolling on mobile</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="side-panel-container">
+        <div class="side-panel-table">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Price</th>
+                            <th>MCap</th>
+                            <th>D1 %</th>
+                            <th>30D %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>BTC</td>
+                            <td>$43,250</td>
+                            <td>$847B</td>
+                            <td class="positive">+2.3%</td>
+                            <td class="positive">+15.8%</td>
+                        </tr>
+                        <tr class="selected-row">
+                            <td>ETH</td>
+                            <td>$2,280</td>
+                            <td>$274B</td>
+                            <td class="negative">-1.2%</td>
+                            <td class="positive">+8.4%</td>
+                        </tr>
+                        <tr>
+                            <td>SOL</td>
+                            <td>$98.50</td>
+                            <td>$42B</td>
+                            <td class="positive">+5.1%</td>
+                            <td class="positive">+22.3%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="side-panel">
+            <h3><span class="coin-symbol">ETH</span> Notes</h3>
+            <textarea placeholder="Add your notes here...">Layer 2 activity increasing significantly. Watch for ETH/BTC ratio improvement.
+
+Key levels:
+- Support: $2,100
+- Resistance: $2,500
+
+TODO: Check gas fees trend</textarea>
+            <div class="save-status">Auto-saved just now</div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Option 4: Modal Popup -->
+    <h2>Option 4: Modal Popup</h2>
+    <span class="option-label">Focused & Minimal</span>
+    <p class="description">Click an icon to open a modal dialog for notes. Best for occasional detailed notes.</p>
+
+    <div class="pros-cons">
+        <div class="pros">
+            <strong>Pros:</strong>
+            <ul>
+                <li>Clean table, no extra columns</li>
+                <li>Focused editing experience</li>
+                <li>Large space for notes</li>
+            </ul>
+        </div>
+        <div class="cons">
+            <strong>Cons:</strong>
+            <ul>
+                <li>Extra click to open/close</li>
+                <li>Blocks view of table</li>
+                <li>Can feel disruptive</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>MCap</th>
+                    <th>D1 %</th>
+                    <th>30D %</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>BTC</td>
+                    <td>$43,250</td>
+                    <td>$847B</td>
+                    <td class="positive">+2.3%</td>
+                    <td class="positive">+15.8%</td>
+                    <td><span class="notes-icon has-notes">&#128221; 1</span></td>
+                </tr>
+                <tr>
+                    <td>ETH</td>
+                    <td>$2,280</td>
+                    <td>$274B</td>
+                    <td class="negative">-1.2%</td>
+                    <td class="positive">+8.4%</td>
+                    <td><span class="notes-icon">&#128221;</span></td>
+                </tr>
+                <tr>
+                    <td>SOL</td>
+                    <td>$98.50</td>
+                    <td>$42B</td>
+                    <td class="positive">+5.1%</td>
+                    <td class="positive">+22.3%</td>
+                    <td><span class="notes-icon has-notes">&#128221; 2</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Sample Modal (always visible for demo) -->
+    <div class="modal-overlay" style="position: relative; background: transparent; margin-top: 20px; height: auto;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>&#128221; Notes for BTC</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <textarea placeholder="Add your notes here...">Watch $45k resistance level. If broken, next target $48k.
+
+Volume has been increasing steadily.
+RSI showing bullish divergence on 4H chart.</textarea>
+            <div class="modal-footer">
+                <button class="modal-btn secondary">Cancel</button>
+                <button class="modal-btn primary">Save Notes</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h2 style="text-align: center; color: #00ff88;">Which option do you prefer?</h2>
+    <p style="text-align: center; color: #888; margin-top: 10px;">
+        1. Inline Column | 2. Expandable Row | 3. Side Panel | 4. Modal Popup
+    </p>
+
+</body>
+</html>

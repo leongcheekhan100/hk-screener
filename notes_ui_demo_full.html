@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HK Screener</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        .header-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #00d4ff;
+            box-shadow: 0 0 20px rgba(0,212,255,0.3);
+        }
+        .header-text {
+            text-align: left;
+        }
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .subtitle { color: #888; font-size: 0.9rem; }
+        #report-time { color: #00d4ff; font-weight: 600; margin-top: 5px; }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+        .stat-value { font-size: 1.5rem; color: #00d4ff; font-weight: 700; }
+        .stat-label { font-size: 0.8rem; color: #888; margin-top: 5px; }
+
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 12px 24px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .tab-btn:hover { background: rgba(255,255,255,0.1); }
+        .tab-btn.active { background: linear-gradient(90deg, #00d4ff, #00ff88); color: #000; border-color: transparent; }
+        .tab-btn .tab-count { font-size: 0.8rem; opacity: 0.8; margin-left: 5px; }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 1rem;
+        }
+        .search-box:focus { outline: none; border-color: #00d4ff; }
+        .filter-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .filter-btn {
+            padding: 10px 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+        .filter-btn:hover { background: rgba(255,255,255,0.1); }
+        .filter-btn.active { background: #00d4ff; color: #000; border-color: #00d4ff; }
+        .filter-btn.new-coins { border-color: #00ff88; color: #00ff88; }
+        .filter-btn.new-coins.active { background: #00ff88; color: #000; }
+
+        .table-container {
+            overflow-x: auto;
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        table { width: 100%; border-collapse: collapse; min-width: 1550px; }
+        th {
+            padding: 15px 10px;
+            text-align: right;
+            background: rgba(0,212,255,0.1);
+            color: #00d4ff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            white-space: nowrap;
+            font-size: 0.8rem;
+        }
+        th:first-child { text-align: left; border-radius: 15px 0 0 0; }
+        th:last-child { border-radius: 0 15px 0 0; text-align: left; }
+        th:hover { background: rgba(0,212,255,0.2); }
+        th.drag-over {
+            background: rgba(0,255,136,0.3);
+            border-left: 3px solid #00ff88;
+        }
+        th[draggable="true"] {
+            user-select: none;
+        }
+        th[draggable="true"]:active {
+            cursor: grabbing;
+        }
+        td {
+            padding: 8px 10px;
+            text-align: right;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+            vertical-align: top;
+            padding-top: 14px;
+        }
+        td:first-child { text-align: left; font-weight: 600; }
+        td:last-child { text-align: left; padding-top: 8px; }
+        tr:hover { background: rgba(255,255,255,0.05); }
+        tr.new-coin { background: rgba(0, 255, 136, 0.08); }
+        tr.new-coin:hover { background: rgba(0, 255, 136, 0.15); }
+        .positive { color: #00ff88; }
+        .negative { color: #ff4757; }
+        .symbol-cell { display: flex; align-items: center; gap: 8px; }
+        .new-badge {
+            font-size: 0.6rem;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-weight: 600;
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        /* Multi-line notes textarea */
+        .notes-multi {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: #e0e0e0;
+            font-size: 0.75rem;
+            width: 400px;
+            height: 50px;
+            resize: none;
+            font-family: inherit;
+            line-height: 1.4;
+        }
+        .notes-multi:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+        .notes-multi::placeholder {
+            color: #555;
+        }
+        .notes-multi.has-notes {
+            border-color: rgba(0,212,255,0.3);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .save-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,255,136,0.9);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .save-indicator.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="hk_logo.jpeg" alt="HK Logo" class="header-logo">
+            <div class="header-text">
+                <h1>HK Screener</h1>
+                <p class="subtitle">Binance Futures USDT-M Perpetuals | With Notes Feature</p>
+                <p class="subtitle" id="report-time">Report Generated: 2026-01-29 02:02:57 UTC</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-value">156</div>
+            <div class="stat-label">Total Coins</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">2</div>
+            <div class="stat-label">New Coins</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">+89%</div>
+            <div class="stat-label">Avg Bounce</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">$12.4B</div>
+            <div class="stat-label">24h Volume</div>
+        </div>
+    </div>
+
+    <div class="tab-container">
+        <button class="tab-btn active">Mega Cap ($1.5B+)<span class="tab-count">(12)</span></button>
+        <button class="tab-btn">High Cap ($1B-$1.5B)<span class="tab-count">(8)</span></button>
+        <button class="tab-btn">Mid-High ($750M-$1B)<span class="tab-count">(15)</span></button>
+        <button class="tab-btn">Mid Cap ($500M-$750M)<span class="tab-count">(18)</span></button>
+        <button class="tab-btn">Mid-Low ($250M-$500M)<span class="tab-count">(25)</span></button>
+        <button class="tab-btn">Low Cap ($100M-$250M)<span class="tab-count">(32)</span></button>
+        <button class="tab-btn">Small Cap ($50M-$100M)<span class="tab-count">(28)</span></button>
+        <button class="tab-btn">Micro Cap ($25M-$50M)<span class="tab-count">(18)</span></button>
+    </div>
+
+    <div class="controls">
+        <input type="text" class="search-box" placeholder="Search symbol..." id="search">
+        <div class="filter-buttons">
+            <button class="filter-btn active">All</button>
+            <button class="filter-btn new-coins">New Coins</button>
+            <button class="filter-btn">D1 Gainers</button>
+            <button class="filter-btn">D1 Losers</button>
+            <button class="filter-btn">30D Gainers</button>
+            <button class="filter-btn">30D Losers</button>
+            <button class="filter-btn">Bounce >100%</button>
+            <button class="filter-btn">Has Notes</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="crypto-table">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>MCap</th>
+                    <th>FDV</th>
+                    <th>24h Vol</th>
+                    <th>D1 %</th>
+                    <th>30D %</th>
+                    <th>Q4 Low</th>
+                    <th>Bounce</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="new-coin">
+                    <td><div class="symbol-cell">RIVER <span class="new-badge">NEW</span></div></td>
+                    <td>$48.00</td>
+                    <td>$930M</td>
+                    <td>$4,745M</td>
+                    <td>$1,189M</td>
+                    <td class="negative">-31.3%</td>
+                    <td class="positive">+853.7%</td>
+                    <td>$1.616</td>
+                    <td class="positive">+2870%</td>
+                    <td><textarea class="notes-multi has-notes" placeholder="Add notes...">Massive pump, watch for pullback to $30 support level</textarea></td>
+                </tr>
+                <tr>
+                    <td>HYPE</td>
+                    <td>$33.16</td>
+                    <td>$8,010M</td>
+                    <td>$32,334M</td>
+                    <td>$1,458M</td>
+                    <td class="positive">+1.9%</td>
+                    <td class="positive">+30.9%</td>
+                    <td>$22.19</td>
+                    <td class="positive">+49%</td>
+                    <td><textarea class="notes-multi has-notes" placeholder="Add notes...">Strong fundamentals, accumulating on dips below $30</textarea></td>
+                </tr>
+                <tr>
+                    <td>XMR</td>
+                    <td>$476.48</td>
+                    <td>$8,767M</td>
+                    <td>$8,767M</td>
+                    <td>$62M</td>
+                    <td class="positive">+1.3%</td>
+                    <td class="positive">+8.5%</td>
+                    <td>$319.08</td>
+                    <td class="positive">+49%</td>
+                    <td><textarea class="notes-multi" placeholder="Add notes..."></textarea></td>
+                </tr>
+                <tr>
+                    <td>PAXG</td>
+                    <td>$5,569</td>
+                    <td>$2,328M</td>
+                    <td>$2,328M</td>
+                    <td>$694M</td>
+                    <td class="positive">+6.4%</td>
+                    <td class="positive">+27.6%</td>
+                    <td>$3,914</td>
+                    <td class="positive">+42%</td>
+                    <td><textarea class="notes-multi has-notes" placeholder="Add notes...">Gold proxy, hedge position during uncertainty</textarea></td>
+                </tr>
+                <tr>
+                    <td>1000PEPE</td>
+                    <td>$0.0049</td>
+                    <td>$2,054M</td>
+                    <td>$2,054M</td>
+                    <td>$294M</td>
+                    <td class="negative">-2.7%</td>
+                    <td class="positive">+20.0%</td>
+                    <td>$0.0036</td>
+                    <td class="positive">+34%</td>
+                    <td><textarea class="notes-multi" placeholder="Add notes..."></textarea></td>
+                </tr>
+                <tr>
+                    <td>PUMP</td>
+                    <td>$0.0030</td>
+                    <td>$1,769M</td>
+                    <td>$2,999M</td>
+                    <td>$299M</td>
+                    <td class="negative">-6.3%</td>
+                    <td class="positive">+65.6%</td>
+                    <td>$0.0017</td>
+                    <td class="positive">+78%</td>
+                    <td><textarea class="notes-multi" placeholder="Add notes..."></textarea></td>
+                </tr>
+                <tr>
+                    <td>ICP</td>
+                    <td>$3.16</td>
+                    <td>$1,733M</td>
+                    <td>$1,733M</td>
+                    <td>$38M</td>
+                    <td class="negative">-3.4%</td>
+                    <td class="positive">+9.6%</td>
+                    <td>$2.66</td>
+                    <td class="positive">+19%</td>
+                    <td><textarea class="notes-multi has-notes" placeholder="Add notes...">Tech solid but tokenomics concern, small position only</textarea></td>
+                </tr>
+                <tr class="new-coin">
+                    <td><div class="symbol-cell">AIO <span class="new-badge">NEW</span></div></td>
+                    <td>$0.172</td>
+                    <td>$40M</td>
+                    <td>$172M</td>
+                    <td>$1.4M</td>
+                    <td class="positive">+2.2%</td>
+                    <td class="positive">+67.0%</td>
+                    <td>$0.079</td>
+                    <td class="positive">+119%</td>
+                    <td><textarea class="notes-multi" placeholder="Add notes..."></textarea></td>
+                </tr>
+                <tr>
+                    <td>WLD</td>
+                    <td>$0.55</td>
+                    <td>$1,530M</td>
+                    <td>$5,516M</td>
+                    <td>$567M</td>
+                    <td class="positive">+18.5%</td>
+                    <td class="positive">+11.9%</td>
+                    <td>$0.469</td>
+                    <td class="positive">+17%</td>
+                    <td><textarea class="notes-multi has-notes" placeholder="Add notes...">Sam Altman project, high FDV risk, trade only</textarea></td>
+                </tr>
+                <tr>
+                    <td>POL</td>
+                    <td>$0.117</td>
+                    <td>$1,241M</td>
+                    <td>$1,241M</td>
+                    <td>$24M</td>
+                    <td class="negative">-1.3%</td>
+                    <td class="positive">+13.0%</td>
+                    <td>$0.099</td>
+                    <td class="positive">+18%</td>
+                    <td><textarea class="notes-multi" placeholder="Add notes..."></textarea></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <footer>
+        <p>Q4 Low = Nov 1 - Dec 31, 2025 | Data: Binance Futures + CoinGecko + CoinMarketCap</p>
+        <p style="margin-top: 10px; color: #00d4ff;">Notes are auto-saved to coin_notes.json</p>
+    </footer>
+
+    <div class="save-indicator" id="save-indicator">Notes saved!</div>
+
+    <script>
+        // Demo: Show save indicator when typing in notes
+        document.querySelectorAll('.notes-multi').forEach(textarea => {
+            let timeout;
+            textarea.addEventListener('input', () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    const indicator = document.getElementById('save-indicator');
+                    indicator.classList.add('show');
+                    setTimeout(() => indicator.classList.remove('show'), 2000);
+
+                    // Update has-notes class
+                    if (textarea.value.trim()) {
+                        textarea.classList.add('has-notes');
+                    } else {
+                        textarea.classList.remove('has-notes');
+                    }
+                }, 500);
+            });
+        });
+
+        // Draggable columns functionality
+        (function() {
+            const table = document.getElementById('crypto-table');
+            const headerRow = table.querySelector('thead tr');
+            const headers = headerRow.querySelectorAll('th');
+            let draggedColIndex = null;
+            let draggedHeader = null;
+
+            headers.forEach((header, index) => {
+                header.setAttribute('draggable', 'true');
+                header.style.cursor = 'grab';
+
+                header.addEventListener('dragstart', (e) => {
+                    draggedColIndex = index;
+                    draggedHeader = header;
+                    header.style.opacity = '0.5';
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', index);
+                });
+
+                header.addEventListener('dragend', () => {
+                    header.style.opacity = '1';
+                    headers.forEach(h => h.classList.remove('drag-over'));
+                });
+
+                header.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                });
+
+                header.addEventListener('dragenter', (e) => {
+                    e.preventDefault();
+                    if (header !== draggedHeader) {
+                        header.classList.add('drag-over');
+                    }
+                });
+
+                header.addEventListener('dragleave', () => {
+                    header.classList.remove('drag-over');
+                });
+
+                header.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    header.classList.remove('drag-over');
+
+                    const fromIndex = draggedColIndex;
+                    const toIndex = index;
+
+                    if (fromIndex === toIndex) return;
+
+                    // Reorder header cells
+                    const headerCells = Array.from(headerRow.children);
+                    const [movedHeader] = headerCells.splice(fromIndex, 1);
+                    headerCells.splice(toIndex, 0, movedHeader);
+                    headerRow.innerHTML = '';
+                    headerCells.forEach(cell => headerRow.appendChild(cell));
+
+                    // Reorder body cells in each row
+                    const bodyRows = table.querySelectorAll('tbody tr');
+                    bodyRows.forEach(row => {
+                        const cells = Array.from(row.children);
+                        const [movedCell] = cells.splice(fromIndex, 1);
+                        cells.splice(toIndex, 0, movedCell);
+                        row.innerHTML = '';
+                        cells.forEach(cell => row.appendChild(cell));
+                    });
+
+                    // Re-attach drag events to new headers
+                    reattachDragEvents();
+
+                    // Save column order to localStorage
+                    saveColumnOrder();
+                });
+            });
+
+            function reattachDragEvents() {
+                const newHeaders = table.querySelectorAll('thead th');
+                newHeaders.forEach((header, index) => {
+                    header.setAttribute('draggable', 'true');
+                    header.style.cursor = 'grab';
+
+                    header.ondragstart = (e) => {
+                        draggedColIndex = index;
+                        draggedHeader = header;
+                        header.style.opacity = '0.5';
+                        e.dataTransfer.effectAllowed = 'move';
+                    };
+
+                    header.ondragend = () => {
+                        header.style.opacity = '1';
+                        newHeaders.forEach(h => h.classList.remove('drag-over'));
+                    };
+
+                    header.ondragover = (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                    };
+
+                    header.ondragenter = (e) => {
+                        e.preventDefault();
+                        if (header !== draggedHeader) {
+                            header.classList.add('drag-over');
+                        }
+                    };
+
+                    header.ondragleave = () => {
+                        header.classList.remove('drag-over');
+                    };
+
+                    header.ondrop = (e) => {
+                        e.preventDefault();
+                        header.classList.remove('drag-over');
+
+                        const fromIndex = draggedColIndex;
+                        const toIndex = index;
+
+                        if (fromIndex === toIndex) return;
+
+                        const headerRow = table.querySelector('thead tr');
+                        const headerCells = Array.from(headerRow.children);
+                        const [movedHeader] = headerCells.splice(fromIndex, 1);
+                        headerCells.splice(toIndex, 0, movedHeader);
+                        headerRow.innerHTML = '';
+                        headerCells.forEach(cell => headerRow.appendChild(cell));
+
+                        const bodyRows = table.querySelectorAll('tbody tr');
+                        bodyRows.forEach(row => {
+                            const cells = Array.from(row.children);
+                            const [movedCell] = cells.splice(fromIndex, 1);
+                            cells.splice(toIndex, 0, movedCell);
+                            row.innerHTML = '';
+                            cells.forEach(cell => row.appendChild(cell));
+                        });
+
+                        reattachDragEvents();
+                        saveColumnOrder();
+                    };
+                });
+            }
+
+            function saveColumnOrder() {
+                const currentHeaders = table.querySelectorAll('thead th');
+                const order = Array.from(currentHeaders).map(h => h.textContent.trim());
+                localStorage.setItem('hk_screener_column_order', JSON.stringify(order));
+
+                // Show save indicator
+                const indicator = document.getElementById('save-indicator');
+                indicator.textContent = 'Column order saved!';
+                indicator.classList.add('show');
+                setTimeout(() => {
+                    indicator.classList.remove('show');
+                    indicator.textContent = 'Notes saved!';
+                }, 2000);
+            }
+        })();
+    </script>
+</body>
+</html>

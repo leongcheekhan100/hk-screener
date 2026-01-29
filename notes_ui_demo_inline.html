@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inline Notes - Width Comparison</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #00d4ff;
+            margin: 40px 0 15px 0;
+            font-size: 1.2rem;
+        }
+        .char-count {
+            color: #00ff88;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+        .table-container {
+            overflow-x: auto;
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            padding: 12px;
+            text-align: right;
+            background: rgba(0,212,255,0.1);
+            color: #00d4ff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        th:first-child { text-align: left; }
+        td {
+            padding: 10px 12px;
+            text-align: right;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        td:first-child { text-align: left; font-weight: 600; }
+        tr:hover { background: rgba(255,255,255,0.05); }
+        .positive { color: #00ff88; }
+        .negative { color: #ff4757; }
+
+        /* Style A: Single line input (truncated) */
+        .notes-single {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: #e0e0e0;
+            font-size: 0.8rem;
+            width: 200px;
+        }
+        .notes-single:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+
+        /* Style B: Wider single line */
+        .notes-wide {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: #e0e0e0;
+            font-size: 0.8rem;
+            width: 300px;
+        }
+        .notes-wide:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+
+        /* Style C: Multi-line textarea (2 rows) */
+        .notes-multi {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: #e0e0e0;
+            font-size: 0.8rem;
+            width: 200px;
+            height: 50px;
+            resize: none;
+            vertical-align: top;
+        }
+        .notes-multi:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+
+        /* Style D: Expandable on focus */
+        .notes-expand {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: #e0e0e0;
+            font-size: 0.8rem;
+            width: 150px;
+            height: 28px;
+            resize: none;
+            transition: all 0.3s ease;
+            vertical-align: top;
+        }
+        .notes-expand:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+            width: 350px;
+            height: 60px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Style E: Tooltip preview */
+        .notes-tooltip-container {
+            position: relative;
+            display: inline-block;
+        }
+        .notes-tooltip {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: #e0e0e0;
+            font-size: 0.8rem;
+            width: 150px;
+        }
+        .notes-tooltip:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+        .tooltip-preview {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: #1a1a3a;
+            border: 1px solid #00d4ff;
+            border-radius: 8px;
+            padding: 10px;
+            width: 300px;
+            font-size: 0.85rem;
+            color: #e0e0e0;
+            z-index: 100;
+            margin-bottom: 5px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .notes-tooltip-container:hover .tooltip-preview {
+            display: block;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent);
+            margin: 50px 0;
+        }
+
+        .recommendation {
+            background: rgba(0,255,136,0.1);
+            border: 1px solid rgba(0,255,136,0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .recommendation h3 {
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+        .recommendation p {
+            color: #ccc;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Inline Notes - Width Comparison</h1>
+    <p class="subtitle">Comparing different approaches for 50-100 character notes</p>
+
+    <!-- Style A: Narrow Single Line (truncated) -->
+    <h2>Style A: Narrow Single Line (200px) - Text gets truncated</h2>
+    <p class="char-count">Shows ~25-30 characters, rest is hidden but accessible via scroll/focus</p>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>MCap</th>
+                    <th>D1 %</th>
+                    <th>30D %</th>
+                    <th style="text-align: left;">Notes (200px)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>BTC</td>
+                    <td>$43,250</td>
+                    <td>$847B</td>
+                    <td class="positive">+2.3%</td>
+                    <td class="positive">+15.8%</td>
+                    <td><input type="text" class="notes-single" value="Watch $45k resistance, support at $42k, volume increasing steadily"></td>
+                </tr>
+                <tr>
+                    <td>ETH</td>
+                    <td>$2,280</td>
+                    <td>$274B</td>
+                    <td class="negative">-1.2%</td>
+                    <td class="positive">+8.4%</td>
+                    <td><input type="text" class="notes-single" value="Layer 2 fees dropping, watch ETH/BTC ratio for breakout signal"></td>
+                </tr>
+                <tr>
+                    <td>SOL</td>
+                    <td>$98.50</td>
+                    <td>$42B</td>
+                    <td class="positive">+5.1%</td>
+                    <td class="positive">+22.3%</td>
+                    <td><input type="text" class="notes-single" value="Strong momentum, NFT volume up 40%, target $120 by end of month"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Style B: Wide Single Line -->
+    <h2>Style B: Wide Single Line (300px) - Shows more text</h2>
+    <p class="char-count">Shows ~45-50 characters, better visibility but table is wider</p>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>MCap</th>
+                    <th>D1 %</th>
+                    <th>30D %</th>
+                    <th style="text-align: left;">Notes (300px)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>BTC</td>
+                    <td>$43,250</td>
+                    <td>$847B</td>
+                    <td class="positive">+2.3%</td>
+                    <td class="positive">+15.8%</td>
+                    <td><input type="text" class="notes-wide" value="Watch $45k resistance, support at $42k, volume increasing steadily"></td>
+                </tr>
+                <tr>
+                    <td>ETH</td>
+                    <td>$2,280</td>
+                    <td>$274B</td>
+                    <td class="negative">-1.2%</td>
+                    <td class="positive">+8.4%</td>
+                    <td><input type="text" class="notes-wide" value="Layer 2 fees dropping, watch ETH/BTC ratio for breakout signal"></td>
+                </tr>
+                <tr>
+                    <td>SOL</td>
+                    <td>$98.50</td>
+                    <td>$42B</td>
+                    <td class="positive">+5.1%</td>
+                    <td class="positive">+22.3%</td>
+                    <td><input type="text" class="notes-wide" value="Strong momentum, NFT volume up 40%, target $120 by end of month"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Style C: Multi-line textarea -->
+    <h2>Style C: Multi-line Textarea (200px x 2 rows) - Shows all text</h2>
+    <p class="char-count">Shows 80-100 characters with word wrap, rows are taller</p>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>MCap</th>
+                    <th>D1 %</th>
+                    <th>30D %</th>
+                    <th style="text-align: left;">Notes (Multi-line)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="vertical-align: top; padding-top: 15px;">BTC</td>
+                    <td style="vertical-align: top; padding-top: 15px;">$43,250</td>
+                    <td style="vertical-align: top; padding-top: 15px;">$847B</td>
+                    <td class="positive" style="vertical-align: top; padding-top: 15px;">+2.3%</td>
+                    <td class="positive" style="vertical-align: top; padding-top: 15px;">+15.8%</td>
+                    <td><textarea class="notes-multi">Watch $45k resistance, support at $42k, volume increasing steadily</textarea></td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: top; padding-top: 15px;">ETH</td>
+                    <td style="vertical-align: top; padding-top: 15px;">$2,280</td>
+                    <td style="vertical-align: top; padding-top: 15px;">$274B</td>
+                    <td class="negative" style="vertical-align: top; padding-top: 15px;">-1.2%</td>
+                    <td class="positive" style="vertical-align: top; padding-top: 15px;">+8.4%</td>
+                    <td><textarea class="notes-multi">Layer 2 fees dropping, watch ETH/BTC ratio for breakout signal</textarea></td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: top; padding-top: 15px;">SOL</td>
+                    <td style="vertical-align: top; padding-top: 15px;">$98.50</td>
+                    <td style="vertical-align: top; padding-top: 15px;">$42B</td>
+                    <td class="positive" style="vertical-align: top; padding-top: 15px;">+5.1%</td>
+                    <td class="positive" style="vertical-align: top; padding-top: 15px;">+22.3%</td>
+                    <td><textarea class="notes-multi">Strong momentum, NFT volume up 40%, target $120 by end of month</textarea></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Style D: Expandable on Focus -->
+    <h2>Style D: Expandable on Focus (150px -> 350px)</h2>
+    <p class="char-count">Compact by default, expands when you click to edit. Try clicking the input!</p>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>MCap</th>
+                    <th>D1 %</th>
+                    <th>30D %</th>
+                    <th style="text-align: left;">Notes (Expandable)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="vertical-align: top; padding-top: 12px;">BTC</td>
+                    <td style="vertical-align: top; padding-top: 12px;">$43,250</td>
+                    <td style="vertical-align: top; padding-top: 12px;">$847B</td>
+                    <td class="positive" style="vertical-align: top; padding-top: 12px;">+2.3%</td>
+                    <td class="positive" style="vertical-align: top; padding-top: 12px;">+15.8%</td>
+                    <td><textarea class="notes-expand">Watch $45k resistance, support at $42k, volume increasing steadily</textarea></td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: top; padding-top: 12px;">ETH</td>
+                    <td style="vertical-align: top; padding-top: 12px;">$2,280</td>
+                    <td style="vertical-align: top; padding-top: 12px;">$274B</td>
+                    <td class="negative" style="vertical-align: top; padding-top: 12px;">-1.2%</td>
+                    <td class="positive" style="vertical-align: top; padding-top: 12px;">+8.4%</td>
+                    <td><textarea class="notes-expand">Layer 2 fees dropping, watch ETH/BTC ratio for breakout signal</textarea></td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: top; padding-top: 12px;">SOL</td>
+                    <td style="vertical-align: top; padding-top: 12px;">$98.50</td>
+                    <td style="vertical-align: top; padding-top: 12px;">$42B</td>
+                    <td class="positive" style="vertical-align: top; padding-top: 12px;">+5.1%</td>
+                    <td class="positive" style="vertical-align: top; padding-top: 12px;">+22.3%</td>
+                    <td><textarea class="notes-expand">Strong momentum, NFT volume up 40%, target $120 by end of month</textarea></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Style E: With Tooltip Preview -->
+    <h2>Style E: Narrow with Hover Tooltip Preview</h2>
+    <p class="char-count">Compact input, hover to see full note in tooltip. Try hovering over the inputs!</p>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>MCap</th>
+                    <th>D1 %</th>
+                    <th>30D %</th>
+                    <th style="text-align: left;">Notes (Hover for full)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>BTC</td>
+                    <td>$43,250</td>
+                    <td>$847B</td>
+                    <td class="positive">+2.3%</td>
+                    <td class="positive">+15.8%</td>
+                    <td>
+                        <div class="notes-tooltip-container">
+                            <input type="text" class="notes-tooltip" value="Watch $45k resistance, support at $42k, volume increasing steadily">
+                            <div class="tooltip-preview">Watch $45k resistance, support at $42k, volume increasing steadily</div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>ETH</td>
+                    <td>$2,280</td>
+                    <td>$274B</td>
+                    <td class="negative">-1.2%</td>
+                    <td class="positive">+8.4%</td>
+                    <td>
+                        <div class="notes-tooltip-container">
+                            <input type="text" class="notes-tooltip" value="Layer 2 fees dropping, watch ETH/BTC ratio for breakout signal">
+                            <div class="tooltip-preview">Layer 2 fees dropping, watch ETH/BTC ratio for breakout signal</div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>SOL</td>
+                    <td>$98.50</td>
+                    <td>$42B</td>
+                    <td class="positive">+5.1%</td>
+                    <td class="positive">+22.3%</td>
+                    <td>
+                        <div class="notes-tooltip-container">
+                            <input type="text" class="notes-tooltip" value="Strong momentum, NFT volume up 40%, target $120 by end of month">
+                            <div class="tooltip-preview">Strong momentum, NFT volume up 40%, target $120 by end of month</div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="recommendation">
+        <h3>My Recommendation for 50-100 characters:</h3>
+        <p>
+            <strong>Style D (Expandable on Focus)</strong> gives you the best of both worlds:
+            <br><br>
+            - Compact table layout when browsing<br>
+            - Full editing space when you need it<br>
+            - No tooltip complexity<br>
+            - Works well on all screen sizes
+            <br><br>
+            <strong>Alternative:</strong> Style E (Hover Tooltip) if you prefer seeing full notes without clicking.
+        </p>
+    </div>
+
+</body>
+</html>

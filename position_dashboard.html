@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HK Position Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            background: #0A0A0A;
+            color: #FBFBFB;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #1F1F1F;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #EA562E;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #FBFBFB;
+        }
+
+        .header-subtitle {
+            font-size: 13px;
+            color: #6B6B6B;
+            margin-top: 2px;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #EA562E 0%, #D14520 100%);
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(234, 86, 46, 0.3);
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .summary-card {
+            background: #111111;
+            border: 1px solid #1F1F1F;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .summary-card.highlight {
+            border-color: #EA562E;
+            background: linear-gradient(135deg, rgba(234, 86, 46, 0.1) 0%, rgba(234, 86, 46, 0.05) 100%);
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: #6B6B6B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #FBFBFB;
+        }
+
+        .summary-value.positive { color: #22C55E; }
+        .summary-value.negative { color: #EF4444; }
+        .summary-value.long { color: #22C55E; }
+        .summary-value.short { color: #EF4444; }
+
+        .summary-subtext {
+            font-size: 12px;
+            color: #6B6B6B;
+            margin-top: 4px;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            margin-top: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #FBFBFB;
+        }
+
+        .section-badge {
+            background: #1F1F1F;
+            color: #A3A3A3;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        /* Positions Table */
+        .table-container {
+            background: #111111;
+            border: 1px solid #1F1F1F;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #0F0F0F;
+            padding: 14px 16px;
+            text-align: right;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6B6B6B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #1F1F1F;
+        }
+
+        th:first-child { text-align: left; }
+
+        td {
+            padding: 16px;
+            text-align: right;
+            font-size: 14px;
+            color: #FBFBFB;
+            border-bottom: 1px solid #1A1A1A;
+        }
+
+        td:first-child { text-align: left; }
+
+        tr:hover { background: #151515; }
+
+        tr:last-child td { border-bottom: none; }
+
+        .symbol-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .symbol-icon {
+            width: 32px;
+            height: 32px;
+            background: #1F1F1F;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #EA562E;
+        }
+
+        .symbol-name {
+            font-weight: 600;
+        }
+
+        .symbol-leverage {
+            font-size: 11px;
+            color: #6B6B6B;
+        }
+
+        .side-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .side-badge.long {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22C55E;
+        }
+
+        .side-badge.short {
+            background: rgba(239, 68, 68, 0.15);
+            color: #EF4444;
+        }
+
+        .positive { color: #22C55E; }
+        .negative { color: #EF4444; }
+
+        /* Progress bar for funding */
+        .funding-bar {
+            width: 100%;
+            height: 4px;
+            background: #1F1F1F;
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .funding-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+        }
+
+        .funding-bar-fill.positive { background: #22C55E; }
+        .funding-bar-fill.negative { background: #EF4444; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid #1F1F1F;
+            color: #6B6B6B;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            border-color: #333;
+            color: #A3A3A3;
+        }
+
+        .tab-btn.active {
+            background: #EA562E;
+            border-color: #EA562E;
+            color: #000;
+        }
+
+        /* Activity List */
+        .activity-list {
+            background: #111111;
+            border: 1px solid #1F1F1F;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #1A1A1A;
+        }
+
+        .activity-item:last-child { border-bottom: none; }
+
+        .activity-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .activity-icon.funding { background: rgba(234, 86, 46, 0.15); color: #EA562E; }
+        .activity-icon.realized { background: rgba(34, 197, 94, 0.15); color: #22C55E; }
+        .activity-icon.commission { background: rgba(239, 68, 68, 0.15); color: #EF4444; }
+
+        .activity-info h4 {
+            font-size: 14px;
+            font-weight: 500;
+            color: #FBFBFB;
+        }
+
+        .activity-info p {
+            font-size: 12px;
+            color: #6B6B6B;
+            margin-top: 2px;
+        }
+
+        .activity-amount {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .activity-time {
+            font-size: 12px;
+            color: #6B6B6B;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6B6B6B;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #A3A3A3;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #1F1F1F;
+            color: #6B6B6B;
+            font-size: 12px;
+        }
+
+        footer a {
+            color: #EA562E;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <img src="hk_logo.jpeg" alt="HK" class="logo">
+            <div>
+                <h1>HK Position Tracker</h1>
+                <p class="header-subtitle" id="report-time">Loading...</p>
+            </div>
+        </div>
+        <button class="refresh-btn" onclick="location.reload()">Refresh Data</button>
+    </header>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+        <div class="summary-card highlight">
+            <div class="summary-label">Account Balance</div>
+            <div class="summary-value" id="total-balance">$0.00</div>
+            <div class="summary-subtext" id="available-balance">Available: $0.00</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Unrealized PnL</div>
+            <div class="summary-value" id="unrealized-pnl">$0.00</div>
+            <div class="summary-subtext" id="unrealized-pct">0.00%</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Total Funding</div>
+            <div class="summary-value" id="total-funding">$0.00</div>
+            <div class="summary-subtext">Paid/Received</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Total PnL</div>
+            <div class="summary-value" id="total-pnl">$0.00</div>
+            <div class="summary-subtext">Unrealized + Funding</div>
+        </div>
+    </div>
+
+    <!-- Position Size Summary -->
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-label">Long Exposure</div>
+            <div class="summary-value long" id="total-long">$0.00</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Short Exposure</div>
+            <div class="summary-value short" id="total-short">$0.00</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Net Exposure</div>
+            <div class="summary-value" id="net-exposure">$0.00</div>
+            <div class="summary-subtext" id="net-direction">Neutral</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Open Positions</div>
+            <div class="summary-value" id="position-count">0</div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="positions">Positions</button>
+        <button class="tab-btn" data-tab="activity">Activity</button>
+        <button class="tab-btn" data-tab="trades">Recent Trades</button>
+    </div>
+
+    <!-- Positions Tab -->
+    <div id="positions-tab" class="tab-content">
+        <div class="section-header">
+            <h2 class="section-title">Open Positions</h2>
+            <span class="section-badge" id="positions-badge">0 positions</span>
+        </div>
+
+        <div class="table-container">
+            <table id="positions-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Side</th>
+                        <th>Size</th>
+                        <th>Entry Price</th>
+                        <th>Mark Price</th>
+                        <th>Liq. Price</th>
+                        <th>Unrealized PnL</th>
+                        <th>Funding</th>
+                        <th>Total PnL</th>
+                    </tr>
+                </thead>
+                <tbody id="positions-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Activity Tab -->
+    <div id="activity-tab" class="tab-content" style="display: none;">
+        <div class="section-header">
+            <h2 class="section-title">Income History</h2>
+            <span class="section-badge" id="activity-badge">0 records</span>
+        </div>
+
+        <div class="activity-list" id="activity-list"></div>
+    </div>
+
+    <!-- Trades Tab -->
+    <div id="trades-tab" class="tab-content" style="display: none;">
+        <div class="section-header">
+            <h2 class="section-title">Recent Trades</h2>
+            <span class="section-badge" id="trades-badge">0 trades</span>
+        </div>
+
+        <div class="table-container">
+            <table id="trades-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Side</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Value</th>
+                        <th>Realized PnL</th>
+                        <th>Fee</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody id="trades-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        <p>HK Position Tracker | Data from Binance Futures API</p>
+    </footer>
+
+    <script>
+const dashboardData = {"reportTime": "2026-01-29 15:02:31 UTC", "account": {"balance": 20436.51480429, "availableBalance": 9362.44770547, "unrealizedProfit": 5912.39354764}, "summary": {"totalLongNotional": 41515.06237056, "totalShortNotional": 81559.48306690001, "netNotional": -40044.42069634001, "totalUnrealizedPnl": 5912.393547639999, "totalFunding": -394.26018070000003, "totalPnl": 5518.13336694, "positionCount": 85}, "positions": [{"symbol": "NIGHTUSDT", "positionAmt": -7595.0, "entryPrice": 0.0829590320792, "markPrice": 0.05695, "unrealizedProfit": 197.53858285, "liquidationPrice": 3.18497058, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 432.53525, "side": "SHORT", "updateTime": 1769581691697, "openTime": 1769183088116, "totalFunding": 0.1508257399999999, "fundingCount": 36, "totalPnl": 197.68940859}, {"symbol": "1000BONKUSDT", "positionAmt": -18704.0, "entryPrice": 0.012297, "markPrice": 0.008113, "unrealizedProfit": 78.257536, "liquidationPrice": 1.32335145, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 151.745552, "side": "SHORT", "updateTime": 1769581626640, "openTime": 1769581626640, "totalFunding": -0.006367619999999999, "fundingCount": 8, "totalPnl": 78.25116838}, {"symbol": "TRXUSDT", "positionAmt": -35954.0, "entryPrice": 0.2953968308018, "markPrice": 0.29351, "unrealizedProfit": 67.83908582, "liquidationPrice": 0.97837814, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 10552.85854, "side": "SHORT", "updateTime": 1769698265945, "openTime": 1769383364268, "totalFunding": -21.438020220000002, "fundingCount": 11, "totalPnl": 46.401065599999995}, {"symbol": "FHEUSDT", "positionAmt": -2133.0, "entryPrice": 0.1404113830287, "markPrice": 0.12305, "unrealizedProfit": 37.03182354, "liquidationPrice": 10.93008616, "leverage": 10, "marginType": "cross", "isolatedMargin": 0.0, "notional": 262.46565, "side": "SHORT", "updateTime": 1768708440975, "openTime": null, "totalFunding": 0.9039181700000002, "fundingCount": 42, "totalPnl": 37.935741709999995}, {"symbol": "SAPIENUSDT", "positionAmt": -2894.0, "entryPrice": 0.1207707636488, "markPrice": 0.1151, "unrealizedProfit": 16.41117944, "liquidationPrice": 8.52327758, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 333.0994, "side": "SHORT", "updateTime": 1769653311163, "openTime": 1769483771750, "totalFunding": 0.0925124, "fundingCount": 15, "totalPnl": 16.503691840000002}, {"symbol": "SOMIUSDT", "positionAmt": -1606.0, "entryPrice": 0.1865, "markPrice": 0.2571, "unrealizedProfit": -113.3836, "liquidationPrice": 15.48237241, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 412.9026, "side": "SHORT", "updateTime": 1768955120458, "openTime": null, "totalFunding": -33.52289999, "fundingCount": 42, "totalPnl": -146.90649999}, {"symbol": "POLUSDT", "positionAmt": -4413.0, "entryPrice": 0.1636118050779, "markPrice": 0.11323, "unrealizedProfit": 222.3348834, "liquidationPrice": 5.66222353, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 499.68399, "side": "SHORT", "updateTime": 1769483606704, "openTime": 1769483606703, "totalFunding": -0.5211693699999999, "fundingCount": 15, "totalPnl": 221.81371403}, {"symbol": "UMAUSDT", "positionAmt": -134.0, "entryPrice": 0.743, "markPrice": 0.6382, "unrealizedProfit": 14.0432, "liquidationPrice": 182.24776582, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 85.5188, "side": "SHORT", "updateTime": 1768828548012, "openTime": null, "totalFunding": 0.16637118999999997, "fundingCount": 42, "totalPnl": 14.20957119}, {"symbol": "VIRTUALUSDT", "positionAmt": -865.1, "entryPrice": 1.003835491196, "markPrice": 0.7748, "unrealizedProfit": 198.13860239, "liquidationPrice": 29.03657748, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 670.27948, "side": "SHORT", "updateTime": 1769652349802, "openTime": 1769483595884, "totalFunding": -0.34968252, "fundingCount": 15, "totalPnl": 197.78891987}, {"symbol": "IDOLUSDT", "positionAmt": -4195.0, "entryPrice": 0.0356919856972, "markPrice": 0.03640551, "unrealizedProfit": -2.99325835, "liquidationPrice": 5.70480651, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 152.72111445, "side": "SHORT", "updateTime": 1769652075474, "openTime": 1769489606509, "totalFunding": 0.06792114, "fundingCount": 14, "totalPnl": -2.92533721}, {"symbol": "IPUSDT", "positionAmt": -317.5, "entryPrice": 2.641311013216, "markPrice": 1.952, "unrealizedProfit": 218.85624567, "liquidationPrice": 79.42574483, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 619.76, "side": "SHORT", "updateTime": 1769581571254, "openTime": 1769581571254, "totalFunding": 0.26436303000000005, "fundingCount": 8, "totalPnl": 219.1206087}, {"symbol": "2ZUSDT", "positionAmt": -4629.0, "entryPrice": 0.1294317023116, "markPrice": 0.11862, "unrealizedProfit": 50.0473593, "liquidationPrice": 5.37486504, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 549.09198, "side": "SHORT", "updateTime": 1769179598354, "openTime": 1769179598354, "totalFunding": -1.69314163, "fundingCount": 36, "totalPnl": 48.35421767}, {"symbol": "ZECUSDT", "positionAmt": -8.673, "entryPrice": 406.9237338488, "markPrice": 357.67252247, "unrealizedProfit": 427.15575621, "liquidationPrice": 3192.41059792, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 3102.09378738, "side": "SHORT", "updateTime": 1769615234182, "openTime": 1769546193094, "totalFunding": 0.55151666, "fundingCount": 5, "totalPnl": 427.70727287}, {"symbol": "HYPEUSDT", "positionAmt": 837.4, "entryPrice": 24.8107714832, "markPrice": 33.12325, "unrealizedProfit": 6960.86951264, "liquidationPrice": 0.0, "leverage": 40, "marginType": "cross", "isolatedMargin": 0.0, "notional": 27737.40955, "side": "LONG", "updateTime": 1769510856314, "openTime": 1769329543527, "totalFunding": -12.66174308, "fundingCount": 36, "totalPnl": 6948.20776956}, {"symbol": "HYPEUSDT", "positionAmt": -466.59, "entryPrice": 31.85484101477, "markPrice": 33.12325, "unrealizedProfit": -591.82695064, "liquidationPrice": 0.0, "leverage": 40, "marginType": "cross", "isolatedMargin": 0.0, "notional": 15454.9772175, "side": "SHORT", "updateTime": 1769660390532, "openTime": 1769547856226, "totalFunding": 1.60955072, "fundingCount": 20, "totalPnl": -590.2173999199999}, {"symbol": "SYRUPUSDT", "positionAmt": -1601.0, "entryPrice": 0.3742617114302, "markPrice": 0.34275, "unrealizedProfit": 50.45024771, "liquidationPrice": 15.54022763, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 548.74275, "side": "SHORT", "updateTime": 1768442438752, "openTime": null, "totalFunding": -1.1249160400000005, "fundingCount": 42, "totalPnl": 49.32533167}, {"symbol": "HOMEUSDT", "positionAmt": -11492.0, "entryPrice": 0.0304225340236, "markPrice": 0.03144604, "unrealizedProfit": -11.76217692, "liquidationPrice": 2.15921255, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 361.37789168, "side": "SHORT", "updateTime": 1769653298010, "openTime": 1769483977501, "totalFunding": 0.23746599000000004, "fundingCount": 15, "totalPnl": -11.52471093}, {"symbol": "STXUSDT", "positionAmt": -802.0, "entryPrice": 0.3734, "markPrice": 0.2848, "unrealizedProfit": 71.0572, "liquidationPrice": 30.77556883, "leverage": 75, "marginType": "cross", "isolatedMargin": 0.0, "notional": 228.4096, "side": "SHORT", "updateTime": 1767686705592, "openTime": null, "totalFunding": -0.21735617999999998, "fundingCount": 21, "totalPnl": 70.83984382}, {"symbol": "SOLUSDT", "positionAmt": -5.67, "entryPrice": 143.1771428571, "markPrice": 120.09, "unrealizedProfit": 130.90409995, "liquidationPrice": 4484.51323881, "leverage": 100, "marginType": "cross", "isolatedMargin": 0.0, "notional": 680.9103, "side": "SHORT", "updateTime": 1769581559553, "openTime": 1769183066093, "totalFunding": 0.0031643499999999825, "fundingCount": 18, "totalPnl": 130.90726429999998}, {"symbol": "PIEVERSEUSDT", "positionAmt": -252.0, "entryPrice": 0.591511111111, "markPrice": 0.5626, "unrealizedProfit": 7.28559972, "liquidationPrice": 94.83919255, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 141.7752, "side": "SHORT", "updateTime": 1769652093802, "openTime": 1769489644566, "totalFunding": 0.10193813000000002, "fundingCount": 14, "totalPnl": 7.387537849999999}, {"symbol": "APTUSDT", "positionAmt": -222.3, "entryPrice": 1.9705, "markPrice": 1.5118, "unrealizedProfit": 101.96901, "liquidationPrice": 111.94833144, "leverage": 75, "marginType": "cross", "isolatedMargin": 0.0, "notional": 336.07314, "side": "SHORT", "updateTime": 1769581617063, "openTime": 1769581617063, "totalFunding": -0.060678499999999996, "fundingCount": 4, "totalPnl": 101.9083315}, {"symbol": "FRAXUSDT", "positionAmt": -300.0, "entryPrice": 0.997828, "markPrice": 0.81871409, "unrealizedProfit": 53.734173, "liquidationPrice": 81.93244612, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 245.614227, "side": "SHORT", "updateTime": 1769615198996, "openTime": 1769615198995, "totalFunding": -0.68388761, "fundingCount": 6, "totalPnl": 53.05028539}, {"symbol": "XPINUSDT", "positionAmt": -188775.0, "entryPrice": 0.0026450284518, "markPrice": 0.00236673, "unrealizedProfit": 52.53419475, "liquidationPrice": 0.12821081, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 446.77945575, "side": "SHORT", "updateTime": 1767735608194, "openTime": null, "totalFunding": 2.1896987699999997, "fundingCount": 42, "totalPnl": 54.72389352}, {"symbol": "ZROUSDT", "positionAmt": -503.4, "entryPrice": 1.88418607469, "markPrice": 1.9247, "unrealizedProfit": -20.39471236, "liquidationPrice": 50.48312198, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 968.89398, "side": "SHORT", "updateTime": 1769652480207, "openTime": 1769179534361, "totalFunding": -0.6275311599999999, "fundingCount": 36, "totalPnl": -21.02224352}, {"symbol": "MUSDT", "positionAmt": -1303.0, "entryPrice": 1.829462811126, "markPrice": 1.5453, "unrealizedProfit": 370.26414143, "liquidationPrice": 20.18320195, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 2013.5259, "side": "SHORT", "updateTime": 1769581505282, "openTime": 1769581505282, "totalFunding": 0.8095012, "fundingCount": 8, "totalPnl": 371.07364263}, {"symbol": "ETHUSDT", "positionAmt": -1.633, "entryPrice": 3086.650424409, "markPrice": 2865.23, "unrealizedProfit": 361.57955304, "liquidationPrice": 18034.20266588, "leverage": 125, "marginType": "cross", "isolatedMargin": 0.0, "notional": 4678.92059, "side": "SHORT", "updateTime": 1769651963952, "openTime": 1769553315041, "totalFunding": 2.95796847, "fundingCount": 5, "totalPnl": 364.53752151000003}, {"symbol": "XAGUSDT", "positionAmt": -17.381, "entryPrice": 114.91, "markPrice": 118.57202538, "unrealizedProfit": -63.64966312, "liquidationPrice": 1542.32668645, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 2060.90037312, "side": "SHORT", "updateTime": 1769581441763, "openTime": 1769581441762, "totalFunding": 0.21114554, "fundingCount": 2, "totalPnl": -63.43851758}, {"symbol": "BUSDT", "positionAmt": -1743.0, "entryPrice": 0.2005060240964, "markPrice": 0.20002429, "unrealizedProfit": 0.83965539, "liquidationPrice": 14.16050292, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 348.64233747, "side": "SHORT", "updateTime": 1769669475063, "openTime": 1769257095522, "totalFunding": 0.7205867600000002, "fundingCount": 30, "totalPnl": 1.56024215}, {"symbol": "ICNTUSDT", "positionAmt": -2097.0, "entryPrice": 0.45, "markPrice": 0.41812709, "unrealizedProfit": 66.83749227, "liquidationPrice": 11.73094517, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 876.81250773, "side": "SHORT", "updateTime": 1769581531778, "openTime": 1769581531778, "totalFunding": -7.0443226899999996, "fundingCount": 8, "totalPnl": 59.79316958}, {"symbol": "RESOLVUSDT", "positionAmt": -2329.0, "entryPrice": 0.1287946586518, "markPrice": 0.08454, "unrealizedProfit": 103.06907985, "liquidationPrice": 10.2930107, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 196.89366, "side": "SHORT", "updateTime": 1769472087737, "openTime": 1769472087737, "totalFunding": -2.64883836, "fundingCount": 15, "totalPnl": 100.42024149}, {"symbol": "COLLECTUSDT", "positionAmt": -1800.0, "entryPrice": 0.0832146388889, "markPrice": 0.0642995, "unrealizedProfit": 34.047234, "liquidationPrice": 12.93602441, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 115.7391, "side": "SHORT", "updateTime": 1769652115649, "openTime": 1769516474624, "totalFunding": 0.12367482999999999, "fundingCount": 12, "totalPnl": 34.17090883}, {"symbol": "LABUSDT", "positionAmt": -570.0, "entryPrice": 0.19429, "markPrice": 0.15888811, "unrealizedProfit": 20.1790773, "liquidationPrice": 41.8456009, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 90.5662227, "side": "SHORT", "updateTime": 1768750497521, "openTime": null, "totalFunding": 0.20360677000000005, "fundingCount": 42, "totalPnl": 20.38268407}, {"symbol": "GUNUSDT", "positionAmt": -29139.0, "entryPrice": 0.0257030862419, "markPrice": 0.02946, "unrealizedProfit": -109.47289188, "liquidationPrice": 0.8436403, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 858.43494, "side": "SHORT", "updateTime": 1769652749770, "openTime": 1769652749770, "totalFunding": 0.07869346999999999, "fundingCount": 3, "totalPnl": -109.39419841}, {"symbol": "TWTUSDT", "positionAmt": -431.0, "entryPrice": 0.9262058004641, "markPrice": 0.86638552, "unrealizedProfit": 25.78254068, "liquidationPrice": 57.59996959, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 373.41215912, "side": "SHORT", "updateTime": 1768627124855, "openTime": null, "totalFunding": 0.32979140000000007, "fundingCount": 42, "totalPnl": 26.11233208}, {"symbol": "KAITOUSDT", "positionAmt": -1105.1, "entryPrice": 0.5142700353182, "markPrice": 0.40736324, "unrealizedProfit": 118.14269362, "liquidationPrice": 22.53334459, "leverage": 5, "marginType": "cross", "isolatedMargin": 0.0, "notional": 450.17711652, "side": "SHORT", "updateTime": 1769652767629, "openTime": 1769483649584, "totalFunding": 0.26496459, "fundingCount": 15, "totalPnl": 118.40765821000001}, {"symbol": "1000LUNCUSDT", "positionAmt": -6515.0, "entryPrice": 0.046, "markPrice": 0.03652, "unrealizedProfit": 61.7622, "liquidationPrice": 3.7899357, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 237.9278, "side": "SHORT", "updateTime": 1767736340984, "openTime": null, "totalFunding": -0.6743811199999998, "fundingCount": 21, "totalPnl": 61.08781888}, {"symbol": "SCRTUSDT", "positionAmt": -1638.0, "entryPrice": 0.1828197802198, "markPrice": 0.1347, "unrealizedProfit": 78.82019964, "liquidationPrice": 14.75080036, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 220.6386, "side": "SHORT", "updateTime": 1769183953020, "openTime": 1769183953020, "totalFunding": -2.6546663500000003, "fundingCount": 36, "totalPnl": 76.16553329}, {"symbol": "IRYSUSDT", "positionAmt": -25959.0, "entryPrice": 0.06249775, "markPrice": 0.047584, "unrealizedProfit": 387.14603625, "liquidationPrice": 0.93716996, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 1235.233056, "side": "SHORT", "updateTime": 1769483542934, "openTime": 1769222192319, "totalFunding": 9.9718693, "fundingCount": 33, "totalPnl": 397.11790555}, {"symbol": "1000PEPEUSDT", "positionAmt": -153931.0, "entryPrice": 0.0063646101048, "markPrice": 0.00472217, "unrealizedProfit": 252.82243164, "liquidationPrice": 0.16512229, "leverage": 75, "marginType": "cross", "isolatedMargin": 0.0, "notional": 726.88835027, "side": "SHORT", "updateTime": 1769581542965, "openTime": 1769183038846, "totalFunding": 0.57004468, "fundingCount": 18, "totalPnl": 253.39247632}, {"symbol": "AXSUSDT", "positionAmt": -700.0, "entryPrice": 2.432, "markPrice": 2.122, "unrealizedProfit": 217.0, "liquidationPrice": 37.03164218, "leverage": 1, "marginType": "cross", "isolatedMargin": 0.0, "notional": 1485.4, "side": "SHORT", "updateTime": 1769131782244, "openTime": 1769127063148, "totalFunding": -272.13551125000004, "fundingCount": 99, "totalPnl": -55.135511250000036}, {"symbol": "CHZUSDT", "positionAmt": -18282.0, "entryPrice": 0.0519164894431, "markPrice": 0.04807593, "unrealizedProfit": 70.2129351, "liquidationPrice": 1.38521774, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 878.92415226, "side": "SHORT", "updateTime": 1769652723253, "openTime": 1769652723253, "totalFunding": 0.05220559, "fundingCount": 1, "totalPnl": 70.26514069}, {"symbol": "ACHUSDT", "positionAmt": -30018.0, "entryPrice": 0.0099830769872, "markPrice": 0.009667, "unrealizedProfit": 9.48778926, "liquidationPrice": 0.82427793, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 290.184006, "side": "SHORT", "updateTime": 1769653236943, "openTime": 1769653236942, "totalFunding": 0.02964277, "fundingCount": 1, "totalPnl": 9.51743203}, {"symbol": "STABLEUSDT", "positionAmt": -36108.0, "entryPrice": 0.0179775674087, "markPrice": 0.02650081, "unrealizedProfit": -307.757511, "liquidationPrice": 0.70348334, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 956.89124748, "side": "SHORT", "updateTime": 1769653066228, "openTime": 1769179588361, "totalFunding": 1.1180262099999998, "fundingCount": 36, "totalPnl": -306.63948479000004}, {"symbol": "XTZUSDT", "positionAmt": -1184.2, "entryPrice": 0.5902749535552, "markPrice": 0.51635538, "unrealizedProfit": 87.53555479, "liquidationPrice": 21.16307079, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 611.46804099, "side": "SHORT", "updateTime": 1768627080529, "openTime": null, "totalFunding": 1.1645284599999997, "fundingCount": 42, "totalPnl": 88.70008325}, {"symbol": "CCUSDT", "positionAmt": -25106.0, "entryPrice": 0.1320638657857, "markPrice": 0.16977, "unrealizedProfit": -946.65035084, "liquidationPrice": 1.14149408, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 4262.24562, "side": "SHORT", "updateTime": 1768964803290, "openTime": null, "totalFunding": 0.8829937799999997, "fundingCount": 42, "totalPnl": -945.76735706}, {"symbol": "BATUSDT", "positionAmt": -1633.3, "entryPrice": 0.2140649298965, "markPrice": 0.1573, "unrealizedProfit": 92.71414383, "liquidationPrice": 15.0559771, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 256.91809, "side": "SHORT", "updateTime": 1769652569063, "openTime": 1769652569063, "totalFunding": 0.02668812, "fundingCount": 1, "totalPnl": 92.74083195}, {"symbol": "DOGEUSDT", "positionAmt": -6393.0, "entryPrice": 0.14181, "markPrice": 0.11818, "unrealizedProfit": 151.06659, "liquidationPrice": 3.98325003, "leverage": 75, "marginType": "cross", "isolatedMargin": 0.0, "notional": 755.52474, "side": "SHORT", "updateTime": 1769183060394, "openTime": 1769183060394, "totalFunding": 0.25361368, "fundingCount": 18, "totalPnl": 151.32020368}, {"symbol": "KAVAUSDT", "positionAmt": -1161.6, "entryPrice": 0.086, "markPrice": 0.0721, "unrealizedProfit": 16.14624, "liquidationPrice": 21.02225415, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 83.75136, "side": "SHORT", "updateTime": 1768828537848, "openTime": null, "totalFunding": 0.11996879999999997, "fundingCount": 42, "totalPnl": 16.266208799999998}, {"symbol": "PLAYUSDT", "positionAmt": -9884.0, "entryPrice": 0.0707169010523, "markPrice": 0.10567, "unrealizedProfit": -345.4764404, "liquidationPrice": 2.50449881, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 1044.44228, "side": "SHORT", "updateTime": 1769565892570, "openTime": 1769179607544, "totalFunding": 9.54272185, "fundingCount": 36, "totalPnl": -335.93371855}, {"symbol": "GLMUSDT", "positionAmt": -913.0, "entryPrice": 0.32793966046, "markPrice": 0.22507, "unrealizedProfit": 93.91999958, "liquidationPrice": 26.87842285, "leverage": 5, "marginType": "cross", "isolatedMargin": 0.0, "notional": 205.48891, "side": "SHORT", "updateTime": 1768386668773, "openTime": null, "totalFunding": -1.8943867800000003, "fundingCount": 42, "totalPnl": 92.02561279999999}, {"symbol": "USELESSUSDT", "positionAmt": -2996.0, "entryPrice": 0.0871851626282, "markPrice": 0.0619812, "unrealizedProfit": 75.51106416, "liquidationPrice": 7.99802716, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 185.6956752, "side": "SHORT", "updateTime": 1769483678945, "openTime": 1769483678945, "totalFunding": 0.14754719, "fundingCount": 15, "totalPnl": 75.65861135}, {"symbol": "RENDERUSDT", "positionAmt": -456.7, "entryPrice": 2.188750173423, "markPrice": 1.786, "unrealizedProfit": 183.93600263, "liquidationPrice": 55.3175044, "leverage": 75, "marginType": "cross", "isolatedMargin": 0.0, "notional": 815.6662, "side": "SHORT", "updateTime": 1769652339298, "openTime": 1769581537756, "totalFunding": -0.0031175900000000017, "fundingCount": 8, "totalPnl": 183.93288504}, {"symbol": "MOVEUSDT", "positionAmt": -6926.0, "entryPrice": 0.0433790412937, "markPrice": 0.03097, "unrealizedProfit": 85.94501104, "liquidationPrice": 3.56168513, "leverage": 75, "marginType": "cross", "isolatedMargin": 0.0, "notional": 214.49822, "side": "SHORT", "updateTime": 1768442155665, "openTime": null, "totalFunding": -6.9445682999999985, "fundingCount": 42, "totalPnl": 79.00044274}, {"symbol": "RAVEUSDT", "positionAmt": -1058.0, "entryPrice": 0.3301325708884, "markPrice": 0.33986172, "unrealizedProfit": -10.2934407, "liquidationPrice": 22.22311005, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 359.57369976, "side": "SHORT", "updateTime": 1769653305662, "openTime": 1769653305662, "totalFunding": 0.14959528, "fundingCount": 3, "totalPnl": -10.14384542}, {"symbol": "ESPORTSUSDT", "positionAmt": -1536.0, "entryPrice": 0.4868900130207, "markPrice": 0.50248, "unrealizedProfit": -23.94622464, "liquidationPrice": 15.95241156, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 771.80928, "side": "SHORT", "updateTime": 1769652085047, "openTime": 1769179578401, "totalFunding": 2.07653863, "fundingCount": 36, "totalPnl": -21.869686010000002}, {"symbol": "POWERUSDT", "positionAmt": -2072.0, "entryPrice": 0.1926818822394, "markPrice": 0.19256155, "unrealizedProfit": 0.24932376, "liquidationPrice": 11.36523961, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 398.9875316, "side": "SHORT", "updateTime": 1769179662178, "openTime": 1769179662177, "totalFunding": 1.22517302, "fundingCount": 36, "totalPnl": 1.47449678}, {"symbol": "SQDUSDT", "positionAmt": -7554.0, "entryPrice": 0.0727192467567, "markPrice": 0.06447586, "unrealizedProfit": 62.27049252, "liquidationPrice": 3.20891628, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 487.05064644, "side": "SHORT", "updateTime": 1769653275474, "openTime": 1769653275474, "totalFunding": 0.07388409, "fundingCount": 3, "totalPnl": 62.34437661}, {"symbol": "HBARUSDT", "positionAmt": -6946.0, "entryPrice": 0.1082, "markPrice": 0.10145, "unrealizedProfit": 46.8855, "liquidationPrice": 3.63560272, "leverage": 26, "marginType": "cross", "isolatedMargin": 0.0, "notional": 704.6717, "side": "SHORT", "updateTime": 1769581553086, "openTime": 1769183045273, "totalFunding": 0.016714429999999947, "fundingCount": 18, "totalPnl": 46.90221443}, {"symbol": "BANUSDT", "positionAmt": -7869.0, "entryPrice": 0.0761303558267, "markPrice": 0.07616807, "unrealizedProfit": -0.29681868, "liquidationPrice": 3.09363184, "leverage": 8, "marginType": "cross", "isolatedMargin": 0.0, "notional": 599.36654283, "side": "SHORT", "updateTime": 1769179639490, "openTime": 1769179639490, "totalFunding": 4.12366472, "fundingCount": 36, "totalPnl": 3.82684604}, {"symbol": "DEEPUSDT", "positionAmt": -5414.0, "entryPrice": 0.0553867085334, "markPrice": 0.03503, "unrealizedProfit": 110.2111738, "liquidationPrice": 4.52979647, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 189.65242, "side": "SHORT", "updateTime": 1768444591575, "openTime": null, "totalFunding": 0.3987475200000001, "fundingCount": 42, "totalPnl": 110.60992132}, {"symbol": "VVVUSDT", "positionAmt": -311.37, "entryPrice": 2.245872274144, "markPrice": 2.73763771, "unrealizedProfit": -153.12100505, "liquidationPrice": 78.93272672, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 852.41825376, "side": "SHORT", "updateTime": 1768627043231, "openTime": null, "totalFunding": -3.3181518899999998, "fundingCount": 42, "totalPnl": -156.43915694}, {"symbol": "FOGOUSDT", "positionAmt": -11954.0, "entryPrice": 0.048340256289, "markPrice": 0.0366, "unrealizedProfit": 140.3429485, "liquidationPrice": 2.07208996, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 437.5164, "side": "SHORT", "updateTime": 1769652135482, "openTime": 1769272846716, "totalFunding": -8.12038964, "fundingCount": 29, "totalPnl": 132.22255886}, {"symbol": "ARCUSDT", "positionAmt": -12770.0, "entryPrice": 0.0655050448217, "markPrice": 0.04995083, "unrealizedProfit": 198.6272617, "liquidationPrice": 1.90755576, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 637.8720991, "side": "SHORT", "updateTime": 1769581576208, "openTime": 1769179556040, "totalFunding": 11.977149660000002, "fundingCount": 36, "totalPnl": 210.60441136}, {"symbol": "XRPUSDT", "positionAmt": -397.1, "entryPrice": 2.087556568132, "markPrice": 1.8268, "unrealizedProfit": 103.54642997, "liquidationPrice": 64.14430129, "leverage": 100, "marginType": "cross", "isolatedMargin": 0.0, "notional": 725.42228, "side": "SHORT", "updateTime": 1769581548988, "openTime": 1769183050963, "totalFunding": 0.24216886999999998, "fundingCount": 18, "totalPnl": 103.78859884}, {"symbol": "CYSUSDT", "positionAmt": -1352.0, "entryPrice": 0.3900281433224, "markPrice": 0.2063, "unrealizedProfit": 248.40044528, "liquidationPrice": 17.33498123, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 278.9176, "side": "SHORT", "updateTime": 1769581606549, "openTime": 1769179628060, "totalFunding": 0.94107217, "fundingCount": 36, "totalPnl": 249.34151745000003}, {"symbol": "ADAUSDT", "positionAmt": -1961.0, "entryPrice": 0.3931375303971, "markPrice": 0.3372, "unrealizedProfit": 109.69349633, "liquidationPrice": 12.91751094, "leverage": 75, "marginType": "cross", "isolatedMargin": 0.0, "notional": 661.2492, "side": "SHORT", "updateTime": 1769581565940, "openTime": 1769183076619, "totalFunding": 0.58931187, "fundingCount": 18, "totalPnl": 110.2828082}, {"symbol": "LITUSDT", "positionAmt": 7527.2, "entryPrice": 2.480716896843, "markPrice": 1.83038219, "unrealizedProfit": -4895.19935384, "liquidationPrice": 0.0, "leverage": 5, "marginType": "cross", "isolatedMargin": 0.0, "notional": 13777.65282056, "side": "LONG", "updateTime": 1769615396697, "openTime": 1769549159144, "totalFunding": -8.822208669999998, "fundingCount": 10, "totalPnl": -4904.02156251}, {"symbol": "ACUUSDT", "positionAmt": -388.0, "entryPrice": 0.25777, "markPrice": 0.20424987, "unrealizedProfit": 20.76581044, "liquidationPrice": 59.63656347, "leverage": 10, "marginType": "cross", "isolatedMargin": 0.0, "notional": 79.24894956, "side": "SHORT", "updateTime": 1769229471272, "openTime": 1769229471272, "totalFunding": 0.12900978, "fundingCount": 32, "totalPnl": 20.89482022}, {"symbol": "LINKUSDT", "positionAmt": -68.98, "entryPrice": 13.242, "markPrice": 11.178, "unrealizedProfit": 142.37472, "liquidationPrice": 368.80986496, "leverage": 45, "marginType": "cross", "isolatedMargin": 0.0, "notional": 771.05844, "side": "SHORT", "updateTime": 1768829379074, "openTime": null, "totalFunding": 0.36239750000000004, "fundingCount": 21, "totalPnl": 142.73711749999998}, {"symbol": "MELANIAUSDT", "positionAmt": -1654.88, "entryPrice": 0.1810595753166, "markPrice": 0.14950983, "unrealizedProfit": 52.21103373, "liquidationPrice": 14.92605567, "leverage": 75, "marginType": "cross", "isolatedMargin": 0.0, "notional": 247.42082747, "side": "SHORT", "updateTime": 1768387982732, "openTime": null, "totalFunding": 0.07428021999999998, "fundingCount": 42, "totalPnl": 52.285313949999995}, {"symbol": "SAFEUSDT", "positionAmt": -1393.0, "entryPrice": 0.215, "markPrice": 0.1383, "unrealizedProfit": 106.8431, "liquidationPrice": 17.20639482, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 192.6519, "side": "SHORT", "updateTime": 1768705880670, "openTime": null, "totalFunding": -0.35890564999999985, "fundingCount": 42, "totalPnl": 106.48419435000001}, {"symbol": "WLFIUSDT", "positionAmt": -17948.0, "entryPrice": 0.156421025217, "markPrice": 0.1561, "unrealizedProfit": 5.76166696, "liquidationPrice": 1.52601105, "leverage": 5, "marginType": "cross", "isolatedMargin": 0.0, "notional": 2801.6828, "side": "SHORT", "updateTime": 1768790725533, "openTime": null, "totalFunding": -9.53980333, "fundingCount": 42, "totalPnl": -3.7781363699999995}, {"symbol": "ALCHUSDT", "positionAmt": -2477.0, "entryPrice": 0.120957408155, "markPrice": 0.100839, "unrealizedProfit": 49.8332768, "liquidationPrice": 9.68898802, "leverage": 10, "marginType": "cross", "isolatedMargin": 0.0, "notional": 249.778203, "side": "SHORT", "updateTime": 1769183917240, "openTime": 1769183917239, "totalFunding": 0.5218675800000001, "fundingCount": 36, "totalPnl": 50.35514438}, {"symbol": "ZENUSDT", "positionAmt": -24.3, "entryPrice": 12.29565432099, "markPrice": 8.32, "unrealizedProfit": 96.60839997, "liquidationPrice": 1016.16468159, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 202.176, "side": "SHORT", "updateTime": 1768626900118, "openTime": null, "totalFunding": 0.13155878000000001, "fundingCount": 21, "totalPnl": 96.73995875}, {"symbol": "KITEUSDT", "positionAmt": -7724.0, "entryPrice": 0.1034326475918, "markPrice": 0.14699161, "unrealizedProfit": -336.44948428, "liquidationPrice": 3.21346329, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 1135.36319564, "side": "SHORT", "updateTime": 1769565919223, "openTime": 1769179566206, "totalFunding": 4.122410179999999, "fundingCount": 36, "totalPnl": -332.3270741}, {"symbol": "COWUSDT", "positionAmt": -878.0, "entryPrice": 0.2657, "markPrice": 0.18118995, "unrealizedProfit": 74.1998239, "liquidationPrice": 28.03344097, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 159.0847761, "side": "SHORT", "updateTime": 1769581631161, "openTime": 1769581631161, "totalFunding": 0.06435547, "fundingCount": 8, "totalPnl": 74.26417937}, {"symbol": "SIGNUSDT", "positionAmt": -1377.0, "entryPrice": 0.03625, "markPrice": 0.03565, "unrealizedProfit": 0.8262, "liquidationPrice": 17.79553016, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 49.09005, "side": "SHORT", "updateTime": 1769652888196, "openTime": 1769652888196, "totalFunding": 0.007407189999999999, "fundingCount": 3, "totalPnl": 0.83360719}, {"symbol": "ICPUSDT", "positionAmt": -157.0, "entryPrice": 4.320534968469, "markPrice": 3.081, "unrealizedProfit": 194.60698872, "liquidationPrice": 158.8204465, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 483.717, "side": "SHORT", "updateTime": 1769652828484, "openTime": 1769483622750, "totalFunding": -0.05118305999999999, "fundingCount": 7, "totalPnl": 194.55580566}, {"symbol": "0GUSDT", "positionAmt": -310.0, "entryPrice": 0.9664567741935, "markPrice": 0.7412, "unrealizedProfit": 69.8295987, "liquidationPrice": 80.09550802, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 229.772, "side": "SHORT", "updateTime": 1767605003926, "openTime": null, "totalFunding": -27.518283650000004, "fundingCount": 42, "totalPnl": 42.311315050000005}, {"symbol": "ROSEUSDT", "positionAmt": -76733.0, "entryPrice": 0.0195316668186, "markPrice": 0.02015, "unrealizedProfit": -47.44708322, "liquidationPrice": 0.33860308, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 1546.16995, "side": "SHORT", "updateTime": 1769015246591, "openTime": null, "totalFunding": -32.59683893, "fundingCount": 21, "totalPnl": -80.04392215}, {"symbol": "MYXUSDT", "positionAmt": -106.0, "entryPrice": 5.61479245283, "markPrice": 5.75098567, "unrealizedProfit": -14.43648132, "liquidationPrice": 223.06821421, "leverage": 10, "marginType": "cross", "isolatedMargin": 0.0, "notional": 609.60448102, "side": "SHORT", "updateTime": 1769179615895, "openTime": 1769179615895, "totalFunding": 1.83686097, "fundingCount": 36, "totalPnl": -12.59962035}, {"symbol": "LAUSDT", "positionAmt": -1271.5, "entryPrice": 0.3142497758553, "markPrice": 0.2841, "unrealizedProfit": 38.33543255, "liquidationPrice": 19.51516108, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 361.23315, "side": "SHORT", "updateTime": 1768627110345, "openTime": null, "totalFunding": -2.8272196000000003, "fundingCount": 42, "totalPnl": 35.50821295}, {"symbol": "QUSDT", "positionAmt": -16204.0, "entryPrice": 0.0215659947544, "markPrice": 0.02209, "unrealizedProfit": -8.49105804, "liquidationPrice": 1.48728236, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 357.94636, "side": "SHORT", "updateTime": 1769652985264, "openTime": 1769652985264, "totalFunding": 0.56212648, "fundingCount": 3, "totalPnl": -7.9289315600000005}, {"symbol": "UAIUSDT", "positionAmt": -2392.0, "entryPrice": 0.187718770903, "markPrice": 0.1805, "unrealizedProfit": 17.26729784, "liquidationPrice": 10.11251359, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 431.756, "side": "SHORT", "updateTime": 1769652103154, "openTime": 1769489633683, "totalFunding": 0.25466592, "fundingCount": 14, "totalPnl": 17.521963760000002}, {"symbol": "HUSDT", "positionAmt": -5159.0, "entryPrice": 0.1708908412482, "markPrice": 0.15063, "unrealizedProfit": 104.52567356, "liquidationPrice": 4.86596403, "leverage": 20, "marginType": "cross", "isolatedMargin": 0.0, "notional": 777.10017, "side": "SHORT", "updateTime": 1769652927157, "openTime": null, "totalFunding": 0, "fundingCount": 0, "totalPnl": 104.52567356}], "recentTrades": [], "incomeHistory": []};
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        if (dashboardData && dashboardData.reportTime) {
+            renderDashboard(dashboardData);
+        } else {
+            document.getElementById('report-time').textContent = 'Run position_tracker.py to load data';
+        }
+
+        setupTabs();
+    });
+
+    function setupTabs() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                document.getElementById(`${tab}-tab`).style.display = 'block';
+            });
+        });
+    }
+
+    function renderDashboard(data) {
+        // Report time
+        document.getElementById('report-time').textContent = `Last updated: ${data.reportTime}`;
+
+        // Account summary
+        const account = data.account || {};
+        const summary = data.summary || {};
+
+        document.getElementById('total-balance').textContent = formatMoney(account.balance);
+        document.getElementById('available-balance').textContent = `Available: ${formatMoney(account.availableBalance)}`;
+
+        const unrealizedPnl = summary.totalUnrealizedPnl || 0;
+        const unrealizedEl = document.getElementById('unrealized-pnl');
+        unrealizedEl.textContent = formatMoney(unrealizedPnl, true);
+        unrealizedEl.className = `summary-value ${unrealizedPnl >= 0 ? 'positive' : 'negative'}`;
+
+        const pnlPct = account.balance ? (unrealizedPnl / account.balance * 100) : 0;
+        document.getElementById('unrealized-pct').textContent = `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%`;
+
+        const totalFunding = summary.totalFunding || 0;
+        const fundingEl = document.getElementById('total-funding');
+        fundingEl.textContent = formatMoney(totalFunding, true);
+        fundingEl.className = `summary-value ${totalFunding >= 0 ? 'positive' : 'negative'}`;
+
+        const totalPnl = summary.totalPnl || 0;
+        const totalPnlEl = document.getElementById('total-pnl');
+        totalPnlEl.textContent = formatMoney(totalPnl, true);
+        totalPnlEl.className = `summary-value ${totalPnl >= 0 ? 'positive' : 'negative'}`;
+
+        // Position sizes
+        document.getElementById('total-long').textContent = formatMoney(summary.totalLongNotional);
+        document.getElementById('total-short').textContent = formatMoney(summary.totalShortNotional);
+
+        const netNotional = summary.netNotional || 0;
+        const netEl = document.getElementById('net-exposure');
+        netEl.textContent = formatMoney(Math.abs(netNotional));
+        netEl.className = `summary-value ${netNotional >= 0 ? 'long' : 'short'}`;
+        document.getElementById('net-direction').textContent = netNotional > 0 ? 'Net Long' : netNotional < 0 ? 'Net Short' : 'Neutral';
+
+        document.getElementById('position-count').textContent = summary.positionCount || 0;
+
+        // Render positions
+        renderPositions(data.positions || []);
+
+        // Render activity
+        renderActivity(data.incomeHistory || []);
+
+        // Render trades
+        renderTrades(data.recentTrades || []);
+    }
+
+    function renderPositions(positions) {
+        const tbody = document.getElementById('positions-body');
+        document.getElementById('positions-badge').textContent = `${positions.length} positions`;
+
+        if (positions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#6B6B6B;padding:40px;">No open positions</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = positions.map(p => {
+            const pnlClass = p.unrealizedProfit >= 0 ? 'positive' : 'negative';
+            const fundingClass = p.totalFunding >= 0 ? 'positive' : 'negative';
+            const totalPnlClass = p.totalPnl >= 0 ? 'positive' : 'negative';
+            const sideClass = p.side.toLowerCase();
+
+            return `
+                <tr>
+                    <td>
+                        <div class="symbol-cell">
+                            <div class="symbol-icon">${p.symbol.replace('USDT', '').slice(0, 2)}</div>
+                            <div>
+                                <div class="symbol-name">${p.symbol.replace('USDT', '')}</div>
+                                <div class="symbol-leverage">${p.leverage}x ${p.marginType}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="side-badge ${sideClass}">${p.side}</span></td>
+                    <td>${formatNumber(Math.abs(p.positionAmt))}<br><span style="color:#6B6B6B;font-size:12px;">${formatMoney(p.notional)}</span></td>
+                    <td>${formatPrice(p.entryPrice)}</td>
+                    <td>${formatPrice(p.markPrice)}</td>
+                    <td>${p.liquidationPrice > 0 ? formatPrice(p.liquidationPrice) : '-'}</td>
+                    <td class="${pnlClass}">${formatMoney(p.unrealizedProfit, true)}</td>
+                    <td class="${fundingClass}">${formatMoney(p.totalFunding, true)}<br><span style="color:#6B6B6B;font-size:11px;">${p.fundingCount} payments</span></td>
+                    <td class="${totalPnlClass}" style="font-weight:600;">${formatMoney(p.totalPnl, true)}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderActivity(income) {
+        const list = document.getElementById('activity-list');
+        document.getElementById('activity-badge').textContent = `${income.length} records`;
+
+        if (income.length === 0) {
+            list.innerHTML = '<div class="empty-state"><h3>No activity</h3><p>Income history will appear here</p></div>';
+            return;
+        }
+
+        list.innerHTML = income.slice(0, 30).map(i => {
+            const iconClass = i.incomeType === 'FUNDING_FEE' ? 'funding' :
+                              i.incomeType === 'REALIZED_PNL' ? 'realized' : 'commission';
+            const icon = i.incomeType === 'FUNDING_FEE' ? 'F' :
+                         i.incomeType === 'REALIZED_PNL' ? 'P' : 'C';
+            const amountClass = i.income >= 0 ? 'positive' : 'negative';
+
+            return `
+                <div class="activity-item">
+                    <div class="activity-left">
+                        <div class="activity-icon ${iconClass}">${icon}</div>
+                        <div class="activity-info">
+                            <h4>${formatIncomeType(i.incomeType)}</h4>
+                            <p>${i.symbol || 'Account'}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="activity-amount ${amountClass}">${formatMoney(i.income, true)}</div>
+                        <div class="activity-time">${formatTime(i.time)}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderTrades(trades) {
+        const tbody = document.getElementById('trades-body');
+        document.getElementById('trades-badge').textContent = `${trades.length} trades`;
+
+        if (trades.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6B6B6B;padding:40px;">No recent trades</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = trades.map(t => {
+            const sideClass = t.side === 'BUY' ? 'positive' : 'negative';
+            const pnlClass = t.realizedPnl >= 0 ? 'positive' : 'negative';
+
+            return `
+                <tr>
+                    <td>${t.symbol.replace('USDT', '')}</td>
+                    <td class="${sideClass}">${t.side}</td>
+                    <td>${formatPrice(t.price)}</td>
+                    <td>${formatNumber(t.qty)}</td>
+                    <td>${formatMoney(t.quoteQty)}</td>
+                    <td class="${pnlClass}">${formatMoney(t.realizedPnl, true)}</td>
+                    <td class="negative">-${formatMoney(t.commission)}</td>
+                    <td>${formatTime(t.time)}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function formatMoney(value, showSign = false) {
+        if (value === undefined || value === null) return '-';
+        const sign = showSign && value > 0 ? '+' : '';
+        return `${sign}$${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function formatNumber(value) {
+        if (value === undefined || value === null) return '-';
+        return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
+    }
+
+    function formatPrice(price) {
+        if (!price) return '-';
+        if (price < 0.0001) return '$' + price.toFixed(8);
+        if (price < 0.01) return '$' + price.toFixed(6);
+        if (price < 1) return '$' + price.toFixed(4);
+        return '$' + price.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+
+    function formatTime(timestamp) {
+        if (!timestamp) return '-';
+        const date = new Date(timestamp);
+        return date.toLocaleString();
+    }
+
+    function formatIncomeType(type) {
+        const types = {
+            'FUNDING_FEE': 'Funding Fee',
+            'REALIZED_PNL': 'Realized PnL',
+            'COMMISSION': 'Commission',
+            'TRANSFER': 'Transfer',
+            'INSURANCE_CLEAR': 'Insurance Clear'
+        };
+        return types[type] || type;
+    }
+    </script>
+</body>
+</html>

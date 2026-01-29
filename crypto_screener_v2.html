@@ -489,6 +489,35 @@
             0%, 50% { opacity: 1; }
             51%, 100% { opacity: 0; }
         }
+
+        /* Payment Info */
+        .payment-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-left: 16px;
+        }
+
+        .payment-img {
+            width: 56px;
+            height: 56px;
+            object-fit: contain;
+        }
+
+        .payment-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.4rem;
+            color: #f00;
+            margin-top: 4px;
+            line-height: 1.8;
+        }
+
+        .payment-bank {
+            font-family: 'VT323', monospace;
+            font-size: 0.85rem;
+            color: #ff0;
+        }
     </style>
 </head>
 <body>
@@ -582,6 +611,13 @@
             <div class="manual-help-btn" id="manual-help-btn">
                 <img src="manual_btn.webp" alt="Help" class="manual-help-img">
                 <span class="manual-help-text">CLICK ME</span>
+            </div>
+            <div class="payment-info">
+                <img src="thank_you.webp" alt="Thank you" class="payment-img">
+                <div class="payment-text">
+                    You owe Leong Chee Khan 100U<br>
+                    <span class="payment-bank">Bank: 8720553300 RYT Bank</span>
+                </div>
             </div>
         </div>
     </header>

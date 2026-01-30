@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HK Screener - Bloomberg Terminal Style</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: #000000;
+            color: #ff9500;
+            min-height: 100vh;
+            padding: 16px;
+            font-size: 14px;
+        }
+        header {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border: 1px solid #ff9500;
+            background: #0a0a0a;
+        }
+        .header-content { display: flex; align-items: center; gap: 16px; }
+        .header-logo { width: 40px; height: 40px; border: 1px solid #ff9500; filter: sepia(100%) saturate(300%) hue-rotate(-15deg); }
+        h1 { font-size: 1.2rem; color: #ff9500; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+        .subtitle { color: #666; font-size: 0.75rem; margin-top: 4px; text-transform: uppercase; }
+        .stats { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .stat-box {
+            background: #0a0a0a;
+            padding: 10px 16px;
+            border: 1px solid #333;
+            min-width: 120px;
+        }
+        .stat-value { font-size: 1.1rem; color: #ff9500; font-weight: 600; }
+        .stat-label { font-size: 0.65rem; color: #666; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+        .tab-container { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 6px 12px;
+            background: #000;
+            border: 1px solid #333;
+            color: #666;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .tab-btn:hover { border-color: #ff9500; color: #ff9500; }
+        .tab-btn.active { background: #ff9500; color: #000; border-color: #ff9500; }
+        .controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .search-box {
+            flex: 1; min-width: 180px;
+            padding: 8px 12px;
+            background: #000;
+            border: 1px solid #333;
+            color: #ff9500;
+            font-size: 0.85rem;
+            font-family: inherit;
+        }
+        .search-box:focus { outline: none; border-color: #ff9500; }
+        .search-box::placeholder { color: #444; }
+        .filter-btn {
+            padding: 8px 12px;
+            background: #000;
+            border: 1px solid #333;
+            color: #666;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .filter-btn:hover { border-color: #ff9500; color: #ff9500; }
+        .filter-btn.active { background: #ff9500; color: #000; border-color: #ff9500; }
+        .table-container { border: 1px solid #333; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            padding: 8px 12px;
+            text-align: right;
+            background: #111;
+            color: #ff9500;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #333;
+        }
+        th:first-child { text-align: left; }
+        td {
+            padding: 8px 12px;
+            text-align: right;
+            border-bottom: 1px solid #1a1a1a;
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+        td:first-child { text-align: left; font-weight: 600; color: #fff; }
+        tr:hover { background: #111; }
+        .positive { color: #00ff00; }
+        .negative { color: #ff0000; }
+        .new-badge {
+            font-size: 0.55rem;
+            padding: 2px 4px;
+            background: #ff9500;
+            color: #000;
+            font-weight: 700;
+            margin-left: 6px;
+            text-transform: uppercase;
+        }
+        footer { text-align: center; margin-top: 16px; color: #444; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        .style-label {
+            position: fixed; top: 10px; right: 10px;
+            background: #ff9500; color: #000;
+            padding: 6px 12px; font-weight: 700; font-size: 0.75rem;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        /* Scanline effect */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
+            pointer-events: none;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <div class="style-label">4. BLOOMBERG TERMINAL</div>
+    <header>
+        <div class="header-content">
+            <img src="../hk_logo.jpeg" class="header-logo">
+            <div>
+                <h1>HK Screener</h1>
+                <p class="subtitle">Binance Futures USDT-M Perpetuals | 8 Market Cap Categories</p>
+            </div>
+        </div>
+    </header>
+    <div class="stats">
+        <div class="stat-box"><div class="stat-value">156</div><div class="stat-label">Total Coins</div></div>
+        <div class="stat-box"><div class="stat-value">3</div><div class="stat-label">New Coins</div></div>
+        <div class="stat-box"><div class="stat-value">+45.2%</div><div class="stat-label">Avg Bounce</div></div>
+        <div class="stat-box"><div class="stat-value">$2.4B</div><div class="stat-label">24h Volume</div></div>
+    </div>
+    <div class="tab-container">
+        <button class="tab-btn">Micro</button>
+        <button class="tab-btn">Small</button>
+        <button class="tab-btn active">Low</button>
+        <button class="tab-btn">Mid-Low</button>
+        <button class="tab-btn">Mid</button>
+        <button class="tab-btn">Mid-High</button>
+        <button class="tab-btn">High</button>
+        <button class="tab-btn">Mega</button>
+    </div>
+    <div class="controls">
+        <input type="text" class="search-box" placeholder="SEARCH SYMBOL...">
+        <button class="filter-btn active">All</button>
+        <button class="filter-btn">New</button>
+        <button class="filter-btn">D1+</button>
+        <button class="filter-btn">D1-</button>
+        <button class="filter-btn">30D+</button>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead><tr>
+                <th>Symbol</th><th>Price</th><th>MCap</th><th>D1 %</th><th>30D %</th><th>Bounce</th>
+            </tr></thead>
+            <tbody>
+                <tr><td>BTC <span class="new-badge">NEW</span></td><td>43,250.00</td><td>845M</td><td class="positive">+2.45</td><td class="positive">+15.32</td><td class="positive">+67.8</td></tr>
+                <tr><td>ETH</td><td>2,280.50</td><td>274M</td><td class="negative">-1.23</td><td class="positive">+8.91</td><td class="positive">+45.2</td></tr>
+                <tr><td>SOL</td><td>98.75</td><td>156M</td><td class="positive">+5.67</td><td class="positive">+22.15</td><td class="positive">+89.3</td></tr>
+                <tr><td>AVAX</td><td>35.20</td><td>128M</td><td class="negative">-0.85</td><td class="negative">-3.42</td><td class="positive">+23.1</td></tr>
+                <tr><td>LINK</td><td>14.85</td><td>112M</td><td class="positive">+1.92</td><td class="positive">+12.67</td><td class="positive">+56.4</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <footer>Q4 LOW = NOV 1 - DEC 31, 2025 | DATA: BINANCE + COINGECKO + CMC</footer>
+</body>
+</html>

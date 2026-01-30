@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HK Screener - UI Style Comparison</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            padding: 40px;
+        }
+        h1 { text-align: center; margin-bottom: 16px; font-size: 2rem; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 48px; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #111;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid #222;
+            transition: all 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+        .card:hover { border-color: #444; transform: translateY(-4px); }
+        .card-preview {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+        .card-info { padding: 20px; border-top: 1px solid #222; }
+        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+        .card-desc { color: #888; font-size: 0.85rem; line-height: 1.5; }
+        .card-colors { display: flex; gap: 8px; margin-top: 12px; }
+        .color-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #333; }
+
+        .card:nth-child(1) .card-preview { background: #0b0e11; }
+        .card:nth-child(2) .card-preview { background: #0d0d0d; }
+        .card:nth-child(3) .card-preview { background: #1a1a2e; }
+        .card:nth-child(4) .card-preview { background: #000; }
+        .card:nth-child(5) .card-preview { background: #000; }
+        .card:nth-child(6) .card-preview { background: #0a0a0a; }
+        .card:nth-child(7) .card-preview { background: #fafafa; color: #111; }
+    </style>
+</head>
+<body>
+    <h1>UI Style Comparison</h1>
+    <p class="subtitle">Click any card to view the full preview</p>
+
+    <div class="grid">
+        <a href="1_binance.html" class="card">
+            <div class="card-preview">1</div>
+            <div class="card-info">
+                <div class="card-title">Binance</div>
+                <div class="card-desc">Professional CEX style. Yellow/gold accents on dark gray. Clean and functional.</div>
+                <div class="card-colors">
+                    <div class="color-dot" style="background: #f0b90b;"></div>
+                    <div class="color-dot" style="background: #0b0e11;"></div>
+                    <div class="color-dot" style="background: #1e2329;"></div>
+                </div>
+            </div>
+        </a>
+
+        <a href="2_hyperliquid.html" class="card">
+            <div class="card-preview">2</div>
+            <div class="card-info">
+                <div class="card-title">Hyperliquid</div>
+                <div class="card-desc">Clean DeFi aesthetic. Mint green accents, pure dark background. Modern and minimal.</div>
+                <div class="card-colors">
+                    <div class="color-dot" style="background: #50fa7b;"></div>
+                    <div class="color-dot" style="background: #0d0d0d;"></div>
+                    <div class="color-dot" style="background: #141414;"></div>
+                </div>
+            </div>
+        </a>
+
+        <a href="3_coingecko.html" class="card">
+            <div class="card-preview">3</div>
+            <div class="card-info">
+                <div class="card-title">CoinGecko</div>
+                <div class="card-desc">Friendly data platform. Green accents, rounded corners, approachable feel.</div>
+                <div class="card-colors">
+                    <div class="color-dot" style="background: #8dc647;"></div>
+                    <div class="color-dot" style="background: #1a1a2e;"></div>
+                    <div class="color-dot" style="background: #16213e;"></div>
+                </div>
+            </div>
+        </a>
+
+        <a href="4_bloomberg.html" class="card">
+            <div class="card-preview">4</div>
+            <div class="card-info">
+                <div class="card-title">Bloomberg Terminal</div>
+                <div class="card-desc">Classic Wall Street. Orange/amber on black, monospace font, data-dense, scanlines.</div>
+                <div class="card-colors">
+                    <div class="color-dot" style="background: #ff9500;"></div>
+                    <div class="color-dot" style="background: #000;"></div>
+                    <div class="color-dot" style="background: #00ff00;"></div>
+                </div>
+            </div>
+        </a>
+
+        <a href="5_dexscreener.html" class="card">
+            <div class="card-preview">5</div>
+            <div class="card-info">
+                <div class="card-title">Dexscreener</div>
+                <div class="card-desc">Crypto degen energy. Neon lime green, glowing effects, pure black background.</div>
+                <div class="card-colors">
+                    <div class="color-dot" style="background: #00ff00;"></div>
+                    <div class="color-dot" style="background: #000;"></div>
+                    <div class="color-dot" style="background: #ff3333;"></div>
+                </div>
+            </div>
+        </a>
+
+        <a href="6_linear.html" class="card">
+            <div class="card-preview">6</div>
+            <div class="card-info">
+                <div class="card-title">Linear/Vercel</div>
+                <div class="card-desc">Modern SaaS style. Subtle grays, gradient accents, refined typography, professional.</div>
+                <div class="card-colors">
+                    <div class="color-dot" style="background: linear-gradient(135deg, #7928ca, #ff0080);"></div>
+                    <div class="color-dot" style="background: #0a0a0a;"></div>
+                    <div class="color-dot" style="background: #222;"></div>
+                </div>
+            </div>
+        </a>
+
+        <a href="7_minimalist.html" class="card">
+            <div class="card-preview">7</div>
+            <div class="card-info">
+                <div class="card-title">Minimalist</div>
+                <div class="card-desc">Ultra clean. Light background, lots of whitespace, subtle borders, zero noise.</div>
+                <div class="card-colors">
+                    <div class="color-dot" style="background: #111;"></div>
+                    <div class="color-dot" style="background: #fafafa;"></div>
+                    <div class="color-dot" style="background: #22c55e;"></div>
+                </div>
+            </div>
+        </a>
+    </div>
+</body>
+</html>

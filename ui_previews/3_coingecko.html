@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HK Screener - CoinGecko Style</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', -apple-system, sans-serif;
+            background: #1a1a2e;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        header {
+            margin-bottom: 24px;
+            padding: 20px 24px;
+            background: #16213e;
+            border-radius: 16px;
+        }
+        .header-content { display: flex; align-items: center; gap: 16px; }
+        .header-logo { width: 56px; height: 56px; border-radius: 50%; border: 3px solid #8dc647; }
+        h1 { font-size: 1.7rem; color: #8dc647; font-weight: 700; }
+        .subtitle { color: #a0aec0; font-size: 0.9rem; margin-top: 4px; }
+        .stats { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+        .stat-box {
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            padding: 20px 28px;
+            border-radius: 16px;
+            border: 1px solid #2d3748;
+            min-width: 150px;
+        }
+        .stat-value { font-size: 1.6rem; color: #8dc647; font-weight: 700; }
+        .stat-label { font-size: 0.8rem; color: #a0aec0; margin-top: 6px; }
+        .tab-container { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 10px 20px;
+            background: #16213e;
+            border: 2px solid #2d3748;
+            color: #a0aec0;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 24px;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { border-color: #8dc647; color: #fff; }
+        .tab-btn.active { background: #8dc647; color: #1a1a2e; border-color: #8dc647; }
+        .controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-box {
+            flex: 1; min-width: 200px;
+            padding: 12px 20px;
+            background: #16213e;
+            border: 2px solid #2d3748;
+            border-radius: 24px;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+        .search-box:focus { outline: none; border-color: #8dc647; }
+        .filter-btn {
+            padding: 10px 20px;
+            background: #16213e;
+            border: 2px solid #2d3748;
+            border-radius: 24px;
+            color: #a0aec0;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .filter-btn:hover { border-color: #8dc647; color: #fff; }
+        .filter-btn.active { background: #8dc647; color: #1a1a2e; border-color: #8dc647; }
+        .table-container { background: #16213e; border-radius: 16px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            padding: 16px 20px;
+            text-align: right;
+            background: #1a1a2e;
+            color: #a0aec0;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        th:first-child { text-align: left; }
+        td {
+            padding: 18px 20px;
+            text-align: right;
+            border-bottom: 1px solid #2d3748;
+            font-size: 0.95rem;
+        }
+        td:first-child { text-align: left; font-weight: 700; }
+        tr:hover { background: #1a1a2e; }
+        .positive { color: #8dc647; }
+        .negative { color: #ea3943; }
+        .new-badge {
+            font-size: 0.65rem;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, #8dc647, #66bb6a);
+            color: #fff;
+            border-radius: 12px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+        footer { text-align: center; margin-top: 24px; color: #718096; font-size: 0.9rem; }
+        .style-label {
+            position: fixed; top: 10px; right: 10px;
+            background: #8dc647; color: #fff;
+            padding: 8px 16px; font-weight: 700; border-radius: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="style-label">3. COINGECKO STYLE</div>
+    <header>
+        <div class="header-content">
+            <img src="../hk_logo.jpeg" class="header-logo">
+            <div>
+                <h1>HK Screener</h1>
+                <p class="subtitle">Binance Futures USDT-M Perpetuals | 8 Market Cap Categories</p>
+            </div>
+        </div>
+    </header>
+    <div class="stats">
+        <div class="stat-box"><div class="stat-value">156</div><div class="stat-label">Total Coins</div></div>
+        <div class="stat-box"><div class="stat-value">3</div><div class="stat-label">New Coins</div></div>
+        <div class="stat-box"><div class="stat-value">+45.2%</div><div class="stat-label">Avg Bounce</div></div>
+        <div class="stat-box"><div class="stat-value">$2.4B</div><div class="stat-label">24h Volume</div></div>
+    </div>
+    <div class="tab-container">
+        <button class="tab-btn">Micro $25M-$50M</button>
+        <button class="tab-btn">Small $50M-$100M</button>
+        <button class="tab-btn active">Low $100M-$250M</button>
+        <button class="tab-btn">Mid-Low $250M-$500M</button>
+        <button class="tab-btn">Mid $500M-$750M</button>
+    </div>
+    <div class="controls">
+        <input type="text" class="search-box" placeholder="Search symbol...">
+        <button class="filter-btn active">All</button>
+        <button class="filter-btn">New Coins</button>
+        <button class="filter-btn">D1 Gainers</button>
+        <button class="filter-btn">30D Gainers</button>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead><tr>
+                <th>Symbol</th><th>Price</th><th>MCap</th><th>D1 %</th><th>30D %</th><th>Bounce</th>
+            </tr></thead>
+            <tbody>
+                <tr><td>BTC <span class="new-badge">NEW</span></td><td>$43,250.00</td><td>$845M</td><td class="positive">+2.45%</td><td class="positive">+15.32%</td><td class="positive">+67.8%</td></tr>
+                <tr><td>ETH</td><td>$2,280.50</td><td>$274M</td><td class="negative">-1.23%</td><td class="positive">+8.91%</td><td class="positive">+45.2%</td></tr>
+                <tr><td>SOL</td><td>$98.75</td><td>$156M</td><td class="positive">+5.67%</td><td class="positive">+22.15%</td><td class="positive">+89.3%</td></tr>
+                <tr><td>AVAX</td><td>$35.20</td><td>$128M</td><td class="negative">-0.85%</td><td class="negative">-3.42%</td><td class="positive">+23.1%</td></tr>
+                <tr><td>LINK</td><td>$14.85</td><td>$112M</td><td class="positive">+1.92%</td><td class="positive">+12.67%</td><td class="positive">+56.4%</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <footer>Q4 Low = Nov 1 - Dec 31, 2025 | Data: Binance Futures + CoinGecko + CoinMarketCap</footer>
+</body>
+</html>
